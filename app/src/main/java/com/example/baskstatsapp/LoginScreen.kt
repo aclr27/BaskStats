@@ -1,9 +1,9 @@
-package com.example.baskstats
+package com.example.baskstatsapp
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -26,13 +27,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
 @Composable
 fun LoginScreen() {
     // Declaramos las variables para los campos de texto.
     var usernameOrEmail by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
+    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -41,8 +42,9 @@ fun LoginScreen() {
         verticalArrangement = Arrangement.Center
     ) {
         //LOGO
+        val image = painterResource(R.drawable.logo)
         Image(
-            painter = painterResource(id = R.drawable.logo),
+            painter = image,
             contentDescription = "BaskStats Logo",
             modifier = Modifier.size(120.dp)
         )
@@ -77,8 +79,19 @@ fun LoginScreen() {
         )
         Button(
             onClick = {
-                println("Usuario/Correo: $usernameOrEmail, Contraseña: $password")
                 // TODO: Lógica de autenticación real aquí
+                val validUsername = "user@example.com"
+                val validPassword = "1234"
+
+                if(usernameOrEmail == validUsername && password == validPassword){
+                    Toast.makeText(context,"Inicio exitoso", Toast.LENGTH_SHORT).show()
+                    println("Navegando a la pantalla principal ...")
+
+                    //navegar a la pantalla principal
+                }else{
+                    Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
+                    println("Inicio de sesión fallido.")
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -90,12 +103,10 @@ fun LoginScreen() {
         Spacer(modifier = Modifier.height(16.dp)) // Espacio antes del "¿Olvidaste?"
 
         // Enlace "¿Olvidaste tu contraseña?"
-        TextButton(onClick = {
-
-        }) {
+        TextButton(onClick = { /* TODO: Navegar a pantalla de recuperación de contraseña */ }) {
             Text(
                 text = "¿Olvidaste tu contraseña?",
-                color = MaterialTheme.colorScheme.primary // Usamos el color naranja del tema
+                color = MaterialTheme.colorScheme.primary
             )
         }
 

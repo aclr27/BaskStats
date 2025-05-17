@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LoginScreen() // Llamamos a nuestro composable LoginScreen
+                    LoginScreen()
                 }
             }
         }
