@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
                         }
                         //Definimos la ruta para la ruta para el Home
                         composable("home_screen"){
-                            HomeScreen()
+                            HomeScreen(navController = navController)
                         }
                     }
                 }
