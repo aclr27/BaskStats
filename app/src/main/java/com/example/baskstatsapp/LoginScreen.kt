@@ -41,6 +41,7 @@ import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 
 import androidx.compose.material3.Icon // Importación correcta del Icon de Material3
+import androidx.compose.material3.OutlinedButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,8 +186,8 @@ fun LoginScreen(navController: NavController) {
             // **BOTÓN "REGISTRARSE"**
             // Lo colocamos directamente dentro del Box para que podamos usar Alignment.BottomCenter
             // y que no sea afectado por el centrado vertical del Column de arriba.
-            Button(
-                onClick = { /* TODO: Navegar a pantalla de registro */ },
+            OutlinedButton(
+                onClick = {  navController.navigate("registration_screen")},
                 modifier = Modifier
                     .align(Alignment.BottomCenter) // Alinea este botón específicamente abajo y al centro
                     .fillMaxWidth()

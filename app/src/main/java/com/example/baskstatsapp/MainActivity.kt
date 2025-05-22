@@ -41,6 +41,10 @@ class MainActivity : ComponentActivity() {
                             //Pasamos el navController a LoginScreen para que pueda navegar
                             LoginScreen(navController = navController)
                         }
+                        //Definimos la ruta para la pantallad de registro.
+                        composable("registration_screen"){
+                            RegistrationScreen(navController = navController)
+                        }
                         //Definimos la ruta para la ruta para el Home
                         composable("home_screen"){
                             HomeScreen()
