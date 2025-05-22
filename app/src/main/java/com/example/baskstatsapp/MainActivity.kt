@@ -10,7 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.baskstatsapp.ui.theme.BaskStatsTheme.BaskStatsAppTheme
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,7 +25,27 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    LoginScreen()
+                    /*
+                    * Creamos el Nav controler (para controlar la navegación entre
+                    * Las escenas.
+                    */
+                    val navController = rememberNavController()
+
+                    //Definimos la pantalla de inicio de nuestra navegación.
+                    NavHost(
+                        navController = navController,
+                        startDestination = "login_screen"
+                    ){
+                        //Definimos la ruta para la pantala de Login
+                        composable("login_screen"){
+                            //Pasamos el navController a LoginScreen para que pueda navegar
+                            LoginScreen(navController = navController)
+                        }
+                        //Definimos la ruta para la ruta para el Home
+                        composable("home_screen"){
+                            HomeScreen()
+                        }
+                    }
                 }
             }
         }
