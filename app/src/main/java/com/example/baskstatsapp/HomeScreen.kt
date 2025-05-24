@@ -1,5 +1,7 @@
 package com.example.baskstatsapp
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,21 +35,166 @@ import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import kotlinx.coroutines.launch
 
+import com.example.baskstatsapp.model.Event
+import com.example.baskstatsapp.model.EventType
+import com.example.baskstatsapp.model.Player
+import com.example.baskstatsapp.model.PlayerStats
+import com.example.baskstatsapp.model.PerformanceSheet // Corregido a PerformanceSheet
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope() // Para abrir y cerrar el drawer
+    val scope = rememberCoroutineScope()
 
-    // Eliminar el TextButton "Cerrar Sesión" de la TopAppBar, se moverá al Drawer
-    // Se mantiene el icono del menú.
+    // Datos de prueba (Mock Data) con los nuevos modelos
+    val currentPlayer = remember { Player(id = "player1", name = "Tu Jugador", number = 23, position = "Escolta") }
+
+    // Datos de ejemplo para eventos y sus estadísticas individuales
+    val sampleEventsAndStats = remember {
+        listOf(
+            Pair(
+                Event(
+                    id = "e1",
+                    type = EventType.MATCH,
+                    dateTime = LocalDateTime.of(2023, 11, 10, 18, 0),
+                    opponent = "Rival B",
+                    teamScore = 90,
+                    opponentScore = 85,
+                    notes = "Partido de liga"
+                ),
+                PlayerStats(
+                    playerId = "player1",
+                    eventId = "e1",
+                    points = 25,
+                    assists = 8,
+                    totalRebounds = 5,
+                    offensiveRebounds = 1,
+                    defensiveRebounds = 4,
+                    steals = 2,
+                    blocks = 1,
+                    turnovers = 3,
+                    fouls = 2,
+                    twoPointersMade = 7,
+                    twoPointersAttempted = 12,
+                    threePointersMade = 3,
+                    threePointersAttempted = 6,
+                    freeThrowsMade = 2,
+                    freeThrowsAttempted = 2,
+                    minutesPlayed = 30,
+                    plusMinus = 15
+                )
+            ),
+            Pair(
+                Event(
+                    id = "e2",
+                    type = EventType.TRAINING,
+                    dateTime = LocalDateTime.of(2023, 11, 8, 19, 0),
+                    notes = "Entrenamiento de tiro"
+                ),
+                PlayerStats(
+                    playerId = "player1",
+                    eventId = "e2",
+                    points = 15,
+                    assists = 3,
+                    totalRebounds = 2,
+                    offensiveRebounds = 0,
+                    defensiveRebounds = 2,
+                    steals = 0,
+                    blocks = 0,
+                    turnovers = 1,
+                    fouls = 0,
+                    twoPointersMade = 5,
+                    twoPointersAttempted = 10,
+                    threePointersMade = 1,
+                    threePointersAttempted = 5,
+                    freeThrowsMade = 2,
+                    freeThrowsAttempted = 2,
+                    minutesPlayed = 60,
+                    plusMinus = 0 // No aplica para entrenamiento
+                )
+            ),
+            Pair(
+                Event(
+                    id = "e3",
+                    type = EventType.MATCH,
+                    dateTime = LocalDateTime.of(2023, 11, 5, 18, 0),
+                    opponent = "Rival A",
+                    teamScore = 107,
+                    opponentScore = 98,
+                    notes = "Partido amistoso"
+                ),
+                PlayerStats(
+                    playerId = "player1",
+                    eventId = "e3",
+                    points = 30,
+                    assists = 7,
+                    totalRebounds = 10,
+                    offensiveRebounds = 3,
+                    defensiveRebounds = 7,
+                    steals = 3,
+                    blocks = 2,
+                    turnovers = 4,
+                    fouls = 3,
+                    twoPointersMade = 9,
+                    twoPointersAttempted = 15,
+                    threePointersMade = 4,
+                    threePointersAttempted = 8,
+                    freeThrowsMade = 0,
+                    freeThrowsAttempted = 0,
+                    minutesPlayed = 35,
+                    plusMinus = 20
+                )
+            )
+        )
+    }
+
+    // Datos de ejemplo para fichas de rendimiento
+    val samplePerformanceSheets = remember {
+        listOf(
+            PerformanceSheet(
+                id = "ps1",
+                date = LocalDate.of(2023, 11, 2),
+                playerId = "player1",
+                eventId = null, // Podría ser nulo si es una ficha general
+                points = 25,
+                assists = 8,
+                rebounds = 5,
+                steals = 2,
+                blocks = 1,
+                turnovers = 3,
+                freeThrowsMade = 2,
+                freeThrowsAttempted = 2
+            ),
+            PerformanceSheet(
+                id = "ps2",
+                date = LocalDate.of(2023, 10, 29),
+                playerId = "player1",
+                eventId = null,
+                points = 21,
+                assists = 7,
+                rebounds = 3,
+                steals = 1,
+                blocks = 0,
+                turnovers = 2,
+                freeThrowsMade = 1,
+                freeThrowsAttempted = 2
+            )
+        )
+    }
+
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = LightGrayBackground // Color de fondo del drawer
+                drawerContainerColor = LightGrayBackground
             ) {
-                // Encabezado del Drawer (similar al logo de LoginScreen, o un texto simple)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -55,8 +203,7 @@ fun HomeScreen(navController: NavController) {
                     verticalArrangement = Arrangement.Center
                 ) {
                     // Puedes usar tu logo aquí si quieres, o solo texto como en el ejemplo
-                    // val image = painterResource(R.drawable.logo)
-                    // Image(painter = image, contentDescription = "BaskStats Logo", modifier = Modifier.size(80.dp))
+                    // Image(painter = painterResource(R.drawable.logo), contentDescription = "BaskStats Logo", modifier = Modifier.size(80.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "BaskStats",
@@ -73,16 +220,15 @@ fun HomeScreen(navController: NavController) {
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
-                Divider() // Separador visual
+                Divider()
 
-                // Elementos del menú
                 NavigationDrawerItem(
                     label = { Text("Inicio") },
-                    selected = navController.currentDestination?.route == "home_screen", // Marca si está seleccionado
+                    selected = navController.currentDestination?.route == "home_screen",
                     onClick = {
                         navController.navigate("home_screen") {
-                            popUpTo(navController.graph.startDestinationId) // Vuelve al inicio de la pila, para evitar múltiples instancias de Home
-                            launchSingleTop = true // Evita recrear la misma pantalla si ya está en la cima
+                            popUpTo(navController.graph.startDestinationId)
+                            launchSingleTop = true
                         }
                         scope.launch { drawerState.close() }
                     },
@@ -99,9 +245,14 @@ fun HomeScreen(navController: NavController) {
                 )
                 NavigationDrawerItem(
                     label = { Text("Eventos") },
-                    selected = false, // TODO: Cambiar cuando tengamos EventosScreen
+                    selected = navController.currentDestination?.route == "events_screen", // Podrías marcarla como seleccionada si ya estás ahí
                     onClick = {
-                        // TODO: navController.navigate("events_screen")
+                        navController.navigate("events_screen") {
+                            // Limpiar la pila de navegación para no acumular Home Screens
+                            popUpTo("home_screen") { saveState = true } // Guarda el estado de Home
+                            launchSingleTop = true // Evita múltiples copias de EventsScreen
+                            restoreState = true // Restaura el estado si ya existía
+                        }
                         scope.launch { drawerState.close() }
                     },
                     icon = { Icon(Icons.Filled.DateRange, contentDescription = "Eventos") },
@@ -114,7 +265,7 @@ fun HomeScreen(navController: NavController) {
                 )
                 NavigationDrawerItem(
                     label = { Text("Fichas de Rendimiento") },
-                    selected = false, // TODO: Cambiar cuando tengamos PerformanceSheetsScreen
+                    selected = false,
                     onClick = {
                         // TODO: navController.navigate("performance_sheets_screen")
                         scope.launch { drawerState.close() }
@@ -129,7 +280,7 @@ fun HomeScreen(navController: NavController) {
                 )
                 NavigationDrawerItem(
                     label = { Text("Equipos") },
-                    selected = false, // TODO: Cambiar cuando tengamos TeamsScreen
+                    selected = false,
                     onClick = {
                         // TODO: navController.navigate("teams_screen")
                         scope.launch { drawerState.close() }
@@ -143,12 +294,11 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
 
-                Spacer(modifier = Modifier.weight(1f)) // Empuja el resto hacia abajo
+                Spacer(modifier = Modifier.weight(1f))
 
-                // Elemento "Configuración" (opcionalmente)
                 NavigationDrawerItem(
                     label = { Text("Configuración") },
-                    selected = false, // TODO: Cambiar cuando tengamos SettingsScreen
+                    selected = false,
                     onClick = {
                         // TODO: navController.navigate("settings_screen")
                         scope.launch { drawerState.close() }
@@ -162,18 +312,14 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
 
-                // Elemento "Cerrar Sesión"
                 NavigationDrawerItem(
                     label = { Text("Cerrar Sesión") },
                     selected = false,
                     onClick = {
-                        // Lógica de cerrar sesión:
-                        // 1. Limpiar cualquier estado de usuario (cuando tengamos persistencia)
-                        // 2. Navegar a la pantalla de login y limpiar la pila de navegación
                         navController.navigate("login_screen") {
-                            popUpTo("home_screen") { inclusive = true } // Elimina home_screen de la pila
+                            popUpTo("home_screen") { inclusive = true }
                         }
-                        scope.launch { drawerState.close() } // Cerrar el drawer después de navegar
+                        scope.launch { drawerState.close() }
                     },
                     icon = { Icon(Icons.Filled.Logout, contentDescription = "Cerrar Sesión") },
                     colors = NavigationDrawerItemDefaults.colors(
@@ -183,7 +329,7 @@ fun HomeScreen(navController: NavController) {
                     ),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
-                Spacer(modifier = Modifier.height(16.dp)) // Espacio al final del drawer
+                Spacer(modifier = Modifier.height(16.dp))
             }
         },
         content = {
@@ -199,7 +345,7 @@ fun HomeScreen(navController: NavController) {
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) { // ¡Abrir el Drawer!
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(
                                     imageVector = Icons.Filled.Menu,
                                     contentDescription = "Menú",
@@ -207,7 +353,6 @@ fun HomeScreen(navController: NavController) {
                                 )
                             }
                         },
-                        // Se ha eliminado el botón "Cerrar Sesión" de aquí.
                         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                             containerColor = LightGrayBackground
                         )
@@ -288,24 +433,11 @@ fun HomeScreen(navController: NavController) {
                                     ),
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
-                                // Tarjetas de eventos recientes
-                                EventCard(
-                                    date = "10/11/2023, 18:00",
-                                    description = "Puntos Totales: 90",
-                                    type = "Partido"
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                EventCard(
-                                    date = "08/11/2023, 19:00",
-                                    description = "Puntos Totales: 75",
-                                    type = "Entrenamiento"
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                EventCard(
-                                    date = "05/11/2023, 18:00",
-                                    description = "Puntos Totales: 107",
-                                    type = "Partido"
-                                )
+                                // Renderiza las tarjetas de eventos usando los nuevos datos
+                                sampleEventsAndStats.forEach { (event, playerStats) ->
+                                    EventItemCard(event = event, playerStats = playerStats, playerName = currentPlayer.name)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
                             }
                         }
 
@@ -324,18 +456,10 @@ fun HomeScreen(navController: NavController) {
                                     ),
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
-                                // Tarjetas de fichas de rendimiento
-                                PerformanceCard(
-                                    date = "Fecha: 02/11/2023",
-                                    description = "Asistencias: 8",
-                                    points = "Puntos: 25"
-                                )
-                                Spacer(modifier = Modifier.height(12.dp))
-                                PerformanceCard(
-                                    date = "Fecha: 29/10/2023",
-                                    description = "Asistencias: 7",
-                                    points = "Puntos: 21"
-                                )
+                                samplePerformanceSheets.forEach { sheet ->
+                                    PerformanceItemCard(performanceSheet = sheet, playerName = currentPlayer.name)
+                                    Spacer(modifier = Modifier.height(12.dp))
+                                }
                             }
                         }
                     }
@@ -345,8 +469,78 @@ fun HomeScreen(navController: NavController) {
     )
 }
 
+
+// Muestra las Estas de un jugador.
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EventCard(date: String, description: String, type: String) {
+fun EventItemCard(event: Event, playerStats: PlayerStats, playerName: String, modifier:Modifier = Modifier) {
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm")
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text(
+                        text = event.dateTime.format(formatter),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DarkText.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = if (event.type == EventType.MATCH && event.opponent != null) "vs ${event.opponent}" else event.notes ?: "Entrenamiento",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = DarkText
+                    )
+                }
+                Text(
+                    text = if (event.type == EventType.MATCH) "Partido" else "Entrenamiento",
+                    color = PrimaryOrange,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .background(PrimaryOrange.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Divider(color = Color(0xFFEEEEEE))
+            Spacer(modifier = Modifier.height(8.dp))
+            // Estadísticas individuales destacadas para el jugador
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StatItem("Pts", playerStats.points) // Abreviado para que quepa mejor
+                StatItem("Asis", playerStats.assists) // Abreviado
+                StatItem("Reb", playerStats.totalRebounds) // Usar totalRebounds
+                StatItem("Rob", playerStats.steals) // Abreviado
+                StatItem("Bloq", playerStats.blocks) // Abreviado
+            }
+        }
+    }
+}
+
+/**
+ * Fichas de rendimiento que dan más detalles del jugador
+ */
+
+// NUEVA COMPOSABLE para Fichas de Rendimiento (más detalles del jugador)
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String) {
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -354,73 +548,38 @@ fun EventCard(date: String, description: String, type: String) {
             containerColor = Color.White
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Column {
-                Text(
-                    text = date,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = DarkText.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = DarkText
-                )
-            }
             Text(
-                text = type,
-                color = PrimaryOrange,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .background(PrimaryOrange.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                text = "Ficha de ${playerName} - ${performanceSheet.date.format(dateFormatter)}",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = DarkText,
+                modifier = Modifier.padding(bottom = 8.dp)
             )
+            Divider(color = Color(0xFFEEEEEE))
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StatItem("Pts", performanceSheet.points)
+                StatItem("Asis", performanceSheet.assists)
+                StatItem("Reb", performanceSheet.rebounds)
+                StatItem("Rob", performanceSheet.steals)
+                StatItem("Bloq", performanceSheet.blocks)
+            }
         }
     }
 }
 
 @Composable
-fun PerformanceCard(date: String, description: String, points: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = date,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = DarkText.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                    color = DarkText
-                )
-            }
-            Text(
-                text = points,
-                color = PrimaryOrange,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier
-                    .background(PrimaryOrange.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            )
-        }
+fun StatItem(label: String, value: Int) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = DarkText.copy(alpha = 0.7f))
+        Text(text = value.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = PrimaryOrange)
     }
 }

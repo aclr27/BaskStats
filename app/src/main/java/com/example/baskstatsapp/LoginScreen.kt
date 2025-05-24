@@ -58,7 +58,7 @@ fun LoginScreen(navController: NavController) {
     )
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF8F8F8)) {
-        // Usamos un Box para contener todo y alinear verticalmente el contenido principal
+        // Usamos un Box para contener y alinear verticalmente el contenido principal
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -208,10 +208,4 @@ fun LoginScreen(navController: NavController) {
             }
         }
     }
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
-@Composable
-fun PreviewLoginScreen() {
-    LoginScreen(rememberNavController())
 }

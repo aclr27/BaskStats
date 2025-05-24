@@ -49,6 +49,9 @@ class MainActivity : ComponentActivity() {
                         composable("home_screen"){
                             HomeScreen(navController = navController)
                         }
+                        composable("events_screen") {
+                            EventsScreen(navController = navController)
+                        }
                     }
                 }
             }
