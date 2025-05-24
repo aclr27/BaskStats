@@ -265,9 +265,13 @@ fun HomeScreen(navController: NavController) {
                 )
                 NavigationDrawerItem(
                     label = { Text("Fichas de Rendimiento") },
-                    selected = false,
+                    selected = navController.currentDestination?.route == "performance_sheets_screen",
                     onClick = {
-                        // TODO: navController.navigate("performance_sheets_screen")
+                        navController.navigate("performance_sheets_screen") {
+                            popUpTo("home_screen") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                         scope.launch { drawerState.close() }
                     },
                     icon = { Icon(Icons.Filled.Star, contentDescription = "Fichas de Rendimiento") },
@@ -539,7 +543,7 @@ fun EventItemCard(event: Event, playerStats: PlayerStats, playerName: String, mo
 // NUEVA COMPOSABLE para Fichas de Rendimiento (más detalles del jugador)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String) {
+fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, modifier: Modifier = Modifier) {
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     Card(
         modifier = Modifier.fillMaxWidth(),

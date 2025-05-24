@@ -182,19 +182,17 @@ fun EventsScreen(navController: NavController) {
                 val playerNameForCards = "Tu Jugador" // Podría venir de un ViewModel o un estado de autenticación
 
                 items(eventsWithStats) { (event, playerStats) ->
-                    // Reutilizamos la misma composable EventItemCard de HomeScreen
-                    // Si clicamos en una tarjeta, navegamos a la pantalla de detalle del evento
-                    // TODO: Pasar el ID del evento para la pantalla de detalle
                     EventItemCard(
                         event = event,
                         playerStats = playerStats,
                         playerName = playerNameForCards,
                         modifier = Modifier.fillMaxWidth().clickable {
                             // Implementar navegación a EventDetailScreen
-                            // navController.navigate("event_detail_screen/${event.id}")
+                            navController.navigate("event_detail_screen/${event.id}") // <-- ESTO ES EL CAMBIO
                             println("Navegando al detalle del evento: ${event.id}")
                         }
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }

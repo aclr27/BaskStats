@@ -49,8 +49,18 @@ class MainActivity : ComponentActivity() {
                         composable("home_screen"){
                             HomeScreen(navController = navController)
                         }
+                        //Definimos la ruta para la escena de eventos.
                         composable("events_screen") {
                             EventsScreen(navController = navController)
+                        }
+                        //{eventId} es un argumento que se le pasa a la pantalla.
+                        composable("event_detail_screen/{eventId}") { backStackEntry ->
+                            val eventId = backStackEntry.arguments?.getString("eventId")
+                            EventDetailScreen(navController = navController, eventId = eventId)
+                        }
+                        //Ruta para la escena de performance Sheets
+                        composable("performance_sheets_screen") {
+                            PerformanceSheetsScreen(navController = navController)
                         }
                     }
                 }
