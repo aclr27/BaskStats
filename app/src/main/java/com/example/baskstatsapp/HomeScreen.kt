@@ -40,6 +40,8 @@ import com.example.baskstatsapp.model.EventType
 import com.example.baskstatsapp.model.Player
 import com.example.baskstatsapp.model.PlayerStats // Ten cuidado con este: si solo usas PerformanceSheet, PlayerStats no debería estar aquí.
 import com.example.baskstatsapp.model.PerformanceSheet
+import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -52,7 +54,10 @@ import java.time.format.DateTimeFormatter
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController,
+               eventViewModel: EventViewModel,
+               performanceSheetViewModel: PerformanceSheetViewModel
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 

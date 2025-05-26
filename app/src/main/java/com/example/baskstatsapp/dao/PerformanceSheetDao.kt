@@ -44,7 +44,7 @@ interface PerformanceSheetDao {
      * Consigue la información de UNA Ficha de Rendimiento específica.
      */
     @Query("SELECT * FROM performance_sheets WHERE id = :id")
-    fun getPerformanceSheetById(id: Long): Flow<PerformanceSheet>
+    fun getPerformanceSheetById(id: Long): Flow<PerformanceSheet?>
 
     /**
      * Consigue todas las Fichas de Rendimiento que pertenecen a un Evento específico (por su ID).

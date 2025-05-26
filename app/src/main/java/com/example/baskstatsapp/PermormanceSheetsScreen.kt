@@ -23,11 +23,15 @@ import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerformanceSheetsScreen(navController: NavController) {
+fun PerformanceSheetsScreen(
+    navController: NavController,
+    performanceSheetViewModel: PerformanceSheetViewModel
+    ) {
 
     val samplePerformanceSheets = remember {
         listOf(

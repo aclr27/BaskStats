@@ -23,7 +23,7 @@ import com.example.baskstatsapp.converters.Converters
  */
 @Database(entities = [Event::class, PerformanceSheet::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class) // Registra tus convertidores de tipo aquí
-abstract class AppDatabase : RoomDatabase() {
+abstract class BaskStatsDatabase : RoomDatabase() {
     //Se comunica con el Room
     abstract fun eventDao(): EventDao
     //Y donde se crean las fichas de rendimiento.

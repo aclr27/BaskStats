@@ -2,15 +2,15 @@ package com.example.baskstatsapp // Asegúrate de que este sea el nombre de tu p
 
 import android.app.Application
 import androidx.room.Room
-import com.example.baskstatsapp.data.AppDatabase
+import com.example.baskstatsapp.data.BaskStatsDatabase
 import com.example.baskstatsapp.data.AppRepository
 
 class BaskStatsApplication : Application() {
     // Instancia de la base de datos
-    val database: AppDatabase by lazy {
+    val database: BaskStatsDatabase by lazy {
         Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java,
+            BaskStatsDatabase::class.java,
             "baskstats_db" // Nombre de tu base de datos
         ).build()
     }

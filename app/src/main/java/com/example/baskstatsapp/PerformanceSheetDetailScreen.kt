@@ -24,6 +24,7 @@ import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 // Importar StatRow desde el archivo común de composables
 // Android Studio debería añadir esto automáticamente al eliminar la definición local si existiera
 // import com.example.baskstatsapp.StatRow // Asegúrate de que esto se importa si es necesario
@@ -32,7 +33,11 @@ import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PerformanceSheetDetailScreen(navController: NavController, sheetId: Long?) { // <-- CAMBIO CLAVE: sheetId es Long?
+fun PerformanceSheetDetailScreen(
+    navController: NavController,
+    sheetId: Long?,
+    performanceSheetViewModel: PerformanceSheetViewModel
+) {
 
     val dummyPerformanceSheetsData = remember {
         listOf(

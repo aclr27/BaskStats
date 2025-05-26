@@ -37,14 +37,25 @@ import java.util.Calendar
 import kotlinx.coroutines.launch
 import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.PerformanceSheet
+import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel // Necesitas este si vas a insertar una PerformanceSheet aquí
+// Importa tus componentes StatInputField y ShotInputField desde donde los hayas centralizado
+import com.example.baskstatsapp.StatInputField // Asume que StatInputField está en el mismo paquete o es de nivel superior
+import com.example.baskstatsapp.ShotInputField // Asume que ShotInputField está en el mismo paquete o es de nivel superior
+
+import android.os.Build // Para @RequiresApi
+import androidx.annotation.RequiresApi // Para @RequiresApi
 
 @OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O) // Añadir esta anotación
 @Composable
-fun AddEventScreen(navController: NavController) {
+fun AddEventScreen(
+    navController: NavController,
+    eventViewModel: EventViewModel,
+    performanceSheetViewModel: PerformanceSheetViewModel
+) {
     val context = LocalContext.current
-    val application = context.applicationContext as BaskStatsApplication
-    val repository = application.repository // Obtener el repositorio
-    val coroutineScope = rememberCoroutineScope() // Para lanzar coroutines
+    val coroutineScope = rememberCoroutineScope()
 
     // Estado para los campos del evento
     var eventType by remember { mutableStateOf(EventType.MATCH) }
@@ -71,25 +82,22 @@ fun AddEventScreen(navController: NavController) {
     var freeThrowsMade by remember { mutableStateOf("") }
     var freeThrowsAttempted by remember { mutableStateOf("") }
     var minutesPlayed by remember { mutableStateOf("") }
-    var plusMinus by remember { mutableStateOf("") }
+    var plusMinus by remember { mutableStateOf("") } // Nota: Plus/Minus puede ser negativo. Tu StatInputField ya lo maneja si se hizo como en PerformanceSheetForm.
 
     val formatterDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val formatterTime = DateTimeFormatter.ofPattern("HH:mm")
 
-    val year = selectedDateTime.year
-    val month = selectedDateTime.monthValue - 1
-    val day = selectedDateTime.dayOfMonth
-    val hour = selectedDateTime.hour
-    val minute = selectedDateTime.minute
+    val calendar = Calendar.getInstance()
+    calendar.timeInMillis = System.currentTimeMillis() // Asegurarse de que el calendario está actualizado
 
     val datePickerDialog = DatePickerDialog(
         context,
         { _: DatePicker, selectedYear: Int, selectedMonth: Int, selectedDayOfMonth: Int ->
             selectedDateTime = selectedDateTime
                 .withYear(selectedYear)
-                .withMonth(selectedMonth + 1)
+                .withMonth(selectedMonth + 1) // Calendar.MONTH es 0-indexed, LocalDate.monthValue es 1-indexed
                 .withDayOfMonth(selectedDayOfMonth)
-        }, year, month, day
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)
     )
 
     val timePickerDialog = TimePickerDialog(
@@ -98,7 +106,7 @@ fun AddEventScreen(navController: NavController) {
             selectedDateTime = selectedDateTime
                 .withHour(selectedHour)
                 .withMinute(selectedMinute)
-        }, hour, minute, true
+        }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true
     )
 
     Scaffold(
@@ -135,7 +143,6 @@ fun AddEventScreen(navController: NavController) {
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // ... (el resto del UI, sin cambios en los composables StatInputField y ShotInputField) ...
                 Text(
                     text = "Tipo de Evento:",
                     style = MaterialTheme.typography.titleMedium,
@@ -183,7 +190,13 @@ fun AddEventScreen(navController: NavController) {
                             Icon(Icons.Filled.DateRange, contentDescription = "Seleccionar Fecha")
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryOrange,
+                        unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                        focusedLabelColor = PrimaryOrange,
+                        unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                    )
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
@@ -196,7 +209,13 @@ fun AddEventScreen(navController: NavController) {
                             Icon(Icons.Filled.DateRange, contentDescription = "Seleccionar Hora")
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryOrange,
+                        unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                        focusedLabelColor = PrimaryOrange,
+                        unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -206,7 +225,13 @@ fun AddEventScreen(navController: NavController) {
                         value = opponent,
                         onValueChange = { opponent = it },
                         label = { Text("Rival") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryOrange,
+                            unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                            focusedLabelColor = PrimaryOrange,
+                            unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                        )
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -217,14 +242,26 @@ fun AddEventScreen(navController: NavController) {
                             value = teamScore,
                             onValueChange = { teamScore = it.filter { char -> char.isDigit() } },
                             label = { Text("Puntuación Equipo") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryOrange,
+                                unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                                focusedLabelColor = PrimaryOrange,
+                                unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                            )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         OutlinedTextField(
                             value = opponentScore,
                             onValueChange = { opponentScore = it.filter { char -> char.isDigit() } },
                             label = { Text("Puntuación Rival") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PrimaryOrange,
+                                unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                                focusedLabelColor = PrimaryOrange,
+                                unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                            )
                         )
                     }
                 }
@@ -238,7 +275,13 @@ fun AddEventScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp),
-                    singleLine = false
+                    singleLine = false,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryOrange,
+                        unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                        focusedLabelColor = PrimaryOrange,
+                        unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -252,15 +295,16 @@ fun AddEventScreen(navController: NavController) {
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                StatInputField("Puntos", points) { points = it }
-                StatInputField("Asistencias", assists) { assists = it }
-                StatInputField("Rebotes Totales", totalRebounds) { totalRebounds = it }
-                StatInputField("Reb. Ofensivos", offensiveRebounds) { offensiveRebounds = it }
-                StatInputField("Reb. Defensivos", defensiveRebounds) { defensiveRebounds = it }
-                StatInputField("Robos", steals) { steals = it }
-                StatInputField("Tapones", blocks) { blocks = it }
-                StatInputField("Pérdidas de Balón", turnovers) { turnovers = it }
-                StatInputField("Faltas", fouls) { fouls = it }
+                // Usar la StatInputField centralizada
+                StatInputField("Puntos", points, { points = it })
+                StatInputField("Asistencias", assists, { assists = it })
+                StatInputField("Rebotes Totales", totalRebounds, { totalRebounds = it })
+                StatInputField("Reb. Ofensivos", offensiveRebounds, { offensiveRebounds = it })
+                StatInputField("Reb. Defensivos", defensiveRebounds, { defensiveRebounds = it })
+                StatInputField("Robos", steals, { steals = it })
+                StatInputField("Tapones", blocks, { blocks = it })
+                StatInputField("Pérdidas de Balón", turnovers, { turnovers = it })
+                StatInputField("Faltas", fouls, { fouls = it })
 
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -269,22 +313,24 @@ fun AddEventScreen(navController: NavController) {
                     color = DarkText,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                ShotInputField("Tiros de 2 Anotados", twoPointersMade) { twoPointersMade = it }
-                ShotInputField("Tiros de 2 Intentados", twoPointersAttempted) { twoPointersAttempted = it }
-                ShotInputField("Tiros de 3 Anotados", threePointersMade) { threePointersMade = it }
-                ShotInputField("Tiros de 3 Intentados", threePointersAttempted) { threePointersAttempted = it }
-                ShotInputField("Tiros Libres Anotados", freeThrowsMade) { freeThrowsMade = it }
-                ShotInputField("Tiros Libres Intentados", freeThrowsAttempted) { freeThrowsAttempted = it }
+                // Reutiliza ShotInputField de PerformanceSheetForm si la definiste genérica allí
+                // Si no, copia su lógica aquí, pero intenta mantenerla centralizada.
+                ShotInputField("Tiros de 2 Anotados", twoPointersMade, { twoPointersMade = it })
+                ShotInputField("Tiros de 2 Intentados", twoPointersAttempted, { twoPointersAttempted = it })
+                ShotInputField("Tiros de 3 Anotados", threePointersMade, { threePointersMade = it })
+                ShotInputField("Tiros de 3 Intentados", threePointersAttempted, { threePointersAttempted = it })
+                ShotInputField("Tiros Libres Anotados", freeThrowsMade, { freeThrowsMade = it })
+                ShotInputField("Tiros Libres Intentados", freeThrowsAttempted, { freeThrowsAttempted = it })
 
                 Spacer(modifier = Modifier.height(16.dp))
-                StatInputField("Minutos Jugados", minutesPlayed) { minutesPlayed = it }
-                StatInputField("Plus/Minus", plusMinus, isNumberInput = false) { plusMinus = it }
+                StatInputField("Minutos Jugados", minutesPlayed, { minutesPlayed = it })
+                StatInputField("Plus/Minus", plusMinus, { plusMinus = it }) // Tu StatInputField ya maneja el "-" si lo implementaste como te sugerí
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
                     onClick = {
-                        coroutineScope.launch { // Lanzar una coroutine para la operación de BD
+                        coroutineScope.launch {
                             val event = Event(
                                 type = eventType,
                                 dateTime = selectedDateTime,
@@ -294,11 +340,12 @@ fun AddEventScreen(navController: NavController) {
                                 notes = notes.takeIf { it.isNotBlank() }
                             )
 
-                            val eventId = repository.insertEvent(event) // Insertar el evento y obtener su ID
+                            // Insertar el evento y obtener su ID
+                            val eventId = eventViewModel.insertEvent(event)
 
                             val performanceSheet = PerformanceSheet(
                                 date = selectedDateTime.toLocalDate(), // Usar LocalDate del evento
-                                playerId = "jugador_actual", // TODO: Reemplazar con el ID del jugador real
+                                playerId = "jugador_actual", // TODO: Reemplazar con el ID del jugador real del usuario loggeado
                                 eventId = eventId, // Asociar al evento recién creado
                                 points = points.toIntOrNull() ?: 0,
                                 assists = assists.toIntOrNull() ?: 0,
@@ -316,9 +363,10 @@ fun AddEventScreen(navController: NavController) {
                                 threePointersAttempted = threePointersAttempted.toIntOrNull() ?: 0,
                                 fouls = fouls.toIntOrNull() ?: 0,
                                 minutesPlayed = minutesPlayed.toIntOrNull() ?: 0,
-                                plusMinus = plusMinus.toIntOrNull() ?: 0 // O manejar como String si puede ser no-numérico
+                                plusMinus = plusMinus.toIntOrNull() ?: 0
                             )
-                            repository.insertPerformanceSheet(performanceSheet) // Insertar la ficha de rendimiento
+                            // Insertar la ficha de rendimiento usando el performanceSheetViewModel
+                            performanceSheetViewModel.insertPerformanceSheet(performanceSheet)
 
                             println("Evento y ficha de rendimiento guardados con IDs: Evento=$eventId, Ficha=${performanceSheet.id}")
                             navController.navigateUp() // Volver a la pantalla anterior después de guardar
@@ -336,49 +384,4 @@ fun AddEventScreen(navController: NavController) {
             }
         }
     )
-}
-
-@Composable
-fun StatInputField(
-    label: String,
-    value: String,
-    isNumberInput: Boolean = true,
-    onValueChange: (String) -> Unit
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {
-            if (isNumberInput) {
-                // Filtra solo dígitos.
-                onValueChange(it.filter { char -> char.isDigit() })
-            } else {
-                // Permite dígitos y el signo negativo para Plus/Minus
-                onValueChange(it.filter { char -> char.isDigit() || char == '-' })
-            }
-        },
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-    )
-}
-
-@Composable
-fun ShotInputField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onValueChange(it.filter { char -> char.isDigit() }) },
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-    )
-}
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 1200)
-@Composable
-fun PreviewAddEventScreen() {
-    BaskStatsAppTheme {
-        AddEventScreen(rememberNavController())
-    }
 }

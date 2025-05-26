@@ -27,13 +27,20 @@ import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.LocalDate // Importa LocalDate si no está ya
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventDetailScreen(navController: NavController, eventId: Long?) { // ¡CAMBIO CLAVE: eventId ahora es Long?!
+fun EventDetailScreen(
+    navController: NavController,
+    eventId: Long?,
+    eventViewModel: EventViewModel,
+    performanceSheetViewModel: PerformanceSheetViewModel
+) {
 
     // -----------------------------------------------------------------
     // Datos de prueba (Mock Data) para un solo evento

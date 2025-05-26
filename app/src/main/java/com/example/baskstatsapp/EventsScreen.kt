@@ -27,12 +27,13 @@ import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.EventViewModel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EventsScreen(navController: NavController) {
+fun EventsScreen(navController: NavController, eventViewModel: EventViewModel) {
 
     // CAMBIOS IMPORTANTES AQUÍ:
     // 1. Los IDs de los Eventos deben ser de tipo Long (o null), no String.
