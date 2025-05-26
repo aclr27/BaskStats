@@ -29,15 +29,13 @@ import java.time.LocalDate
 @Composable
 fun PerformanceSheetsScreen(navController: NavController) {
 
-    // Datos de prueba (Mock Data) para las fichas de rendimiento.
-    // En una aplicación real, esto provendría de un ViewModel que cargaría datos.
     val samplePerformanceSheets = remember {
         listOf(
             PerformanceSheet(
-                id = "ps1",
+                id = 101L, // <-- CAMBIO CLAVE: ID como Long
                 date = LocalDate.of(2023, 11, 2),
                 playerId = "player1",
-                eventId = "e1", // Asociado a un evento si aplica
+                eventId = 1L, // <-- CAMBIO CLAVE: eventId como Long
                 points = 25,
                 assists = 8,
                 rebounds = 5,
@@ -45,13 +43,17 @@ fun PerformanceSheetsScreen(navController: NavController) {
                 blocks = 1,
                 turnovers = 3,
                 freeThrowsMade = 2,
-                freeThrowsAttempted = 2
+                freeThrowsAttempted = 2,
+                // Asegúrate de inicializar todos los campos adicionales de PerformanceSheet
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             ),
             PerformanceSheet(
-                id = "ps2",
+                id = 102L, // <-- CAMBIO CLAVE: ID como Long
                 date = LocalDate.of(2023, 10, 29),
                 playerId = "player1",
-                eventId = "e3", // Asociado a otro evento
+                eventId = 3L, // <-- CAMBIO CLAVE: eventId como Long
                 points = 21,
                 assists = 7,
                 rebounds = 3,
@@ -59,13 +61,16 @@ fun PerformanceSheetsScreen(navController: NavController) {
                 blocks = 0,
                 turnovers = 2,
                 freeThrowsMade = 1,
-                freeThrowsAttempted = 2
+                freeThrowsAttempted = 2,
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             ),
             PerformanceSheet(
-                id = "ps3",
+                id = 103L, // <-- CAMBIO CLAVE: ID como Long
                 date = LocalDate.of(2023, 10, 25),
                 playerId = "player1",
-                eventId = null, // Ficha general, no de un evento específico
+                eventId = null, // Puede ser null
                 points = 18,
                 assists = 5,
                 rebounds = 7,
@@ -73,13 +78,16 @@ fun PerformanceSheetsScreen(navController: NavController) {
                 blocks = 1,
                 turnovers = 2,
                 freeThrowsMade = 4,
-                freeThrowsAttempted = 5
+                freeThrowsAttempted = 5,
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             ),
             PerformanceSheet(
-                id = "ps4",
+                id = 104L, // <-- CAMBIO CLAVE: ID como Long
                 date = LocalDate.of(2023, 10, 20),
                 playerId = "player1",
-                eventId = "e5",
+                eventId = 5L, // <-- CAMBIO CLAVE: eventId como Long
                 points = 10,
                 assists = 2,
                 rebounds = 3,
@@ -87,7 +95,10 @@ fun PerformanceSheetsScreen(navController: NavController) {
                 blocks = 0,
                 turnovers = 1,
                 freeThrowsMade = 0,
-                freeThrowsAttempted = 0
+                freeThrowsAttempted = 0,
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             )
         )
     }
@@ -104,7 +115,7 @@ fun PerformanceSheetsScreen(navController: NavController) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.navigateUp() }) { // Botón de retroceso
+                    IconButton(onClick = { navController.navigateUp() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
@@ -126,14 +137,14 @@ fun PerformanceSheetsScreen(navController: NavController) {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Asumimos un nombre de jugador para la tarjeta, en un futuro vendría del estado de la app
-                val playerNameForCards = "Tu Jugador" // Podría venir de un ViewModel o un estado de autenticación
+                val playerNameForCards = "Tu Jugador"
 
                 items(samplePerformanceSheets) { sheet ->
                     PerformanceItemCard(
                         performanceSheet = sheet,
                         playerName = playerNameForCards,
-                        modifier = Modifier.fillMaxWidth().clickable { // <-- Aquí está el clickable
+                        modifier = Modifier.fillMaxWidth().clickable {
+                            // Ahora sheet.id es un Long, lo que coincide con la ruta en MainActivity.kt
                             navController.navigate("performance_sheet_detail_screen/${sheet.id}")
                             println("Navegando al detalle de la ficha: ${sheet.id}")
                         }
@@ -144,4 +155,3 @@ fun PerformanceSheetsScreen(navController: NavController) {
         }
     )
 }
-

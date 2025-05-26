@@ -38,11 +38,15 @@ import kotlinx.coroutines.launch
 import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.EventType
 import com.example.baskstatsapp.model.Player
-import com.example.baskstatsapp.model.PlayerStats
-import com.example.baskstatsapp.model.PerformanceSheet // Corregido a PerformanceSheet
+import com.example.baskstatsapp.model.PlayerStats // Ten cuidado con este: si solo usas PerformanceSheet, PlayerStats no debería estar aquí.
+import com.example.baskstatsapp.model.PerformanceSheet
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+
+// Importar StatItem y StatRow desde StatsComposables.kt
+// Android Studio debería añadir esto automáticamente al eliminar las funciones locales
+// import com.example.baskstatsapp.StatItem // Asegúrate de que esto se importa si es necesario
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -56,11 +60,13 @@ fun HomeScreen(navController: NavController) {
     val currentPlayer = remember { Player(id = "player1", name = "Tu Jugador", number = 23, position = "Escolta") }
 
     // Datos de ejemplo para eventos y sus estadísticas individuales
+    // ATENCIÓN: Si vas a usar PerformanceSheet en EventDetailScreen, aquí deberías usarlo también
+    // o asegurarte de que PlayerStats es un modelo distinto para datos temporales.
     val sampleEventsAndStats = remember {
         listOf(
             Pair(
                 Event(
-                    id = "e1",
+                    id = 1L, // Los IDs deben ser Long para coincidir con Room y navegación
                     type = EventType.MATCH,
                     dateTime = LocalDateTime.of(2023, 11, 10, 18, 0),
                     opponent = "Rival B",
@@ -68,12 +74,14 @@ fun HomeScreen(navController: NavController) {
                     opponentScore = 85,
                     notes = "Partido de liga"
                 ),
-                PlayerStats(
+                PerformanceSheet( // Cambiado a PerformanceSheet
+                    id = 101L,
+                    date = LocalDate.of(2023, 11, 10),
                     playerId = "player1",
-                    eventId = "e1",
+                    eventId = 1L,
                     points = 25,
                     assists = 8,
-                    totalRebounds = 5,
+                    rebounds = 5, // Usar 'rebounds' si es el campo de PerformanceSheet
                     offensiveRebounds = 1,
                     defensiveRebounds = 4,
                     steals = 2,
@@ -92,17 +100,19 @@ fun HomeScreen(navController: NavController) {
             ),
             Pair(
                 Event(
-                    id = "e2",
+                    id = 2L, // Los IDs deben ser Long
                     type = EventType.TRAINING,
                     dateTime = LocalDateTime.of(2023, 11, 8, 19, 0),
                     notes = "Entrenamiento de tiro"
                 ),
-                PlayerStats(
+                PerformanceSheet( // Cambiado a PerformanceSheet
+                    id = 102L,
+                    date = LocalDate.of(2023, 11, 8),
                     playerId = "player1",
-                    eventId = "e2",
+                    eventId = 2L,
                     points = 15,
                     assists = 3,
-                    totalRebounds = 2,
+                    rebounds = 2,
                     offensiveRebounds = 0,
                     defensiveRebounds = 2,
                     steals = 0,
@@ -116,12 +126,12 @@ fun HomeScreen(navController: NavController) {
                     freeThrowsMade = 2,
                     freeThrowsAttempted = 2,
                     minutesPlayed = 60,
-                    plusMinus = 0 // No aplica para entrenamiento
+                    plusMinus = 0
                 )
             ),
             Pair(
                 Event(
-                    id = "e3",
+                    id = 3L, // Los IDs deben ser Long
                     type = EventType.MATCH,
                     dateTime = LocalDateTime.of(2023, 11, 5, 18, 0),
                     opponent = "Rival A",
@@ -129,12 +139,14 @@ fun HomeScreen(navController: NavController) {
                     opponentScore = 98,
                     notes = "Partido amistoso"
                 ),
-                PlayerStats(
+                PerformanceSheet( // Cambiado a PerformanceSheet
+                    id = 103L,
+                    date = LocalDate.of(2023, 11, 5),
                     playerId = "player1",
-                    eventId = "e3",
+                    eventId = 3L,
                     points = 30,
                     assists = 7,
-                    totalRebounds = 10,
+                    rebounds = 10,
                     offensiveRebounds = 3,
                     defensiveRebounds = 7,
                     steals = 3,
@@ -158,7 +170,7 @@ fun HomeScreen(navController: NavController) {
     val samplePerformanceSheets = remember {
         listOf(
             PerformanceSheet(
-                id = "ps1",
+                id = 104L, // ID de tipo Long
                 date = LocalDate.of(2023, 11, 2),
                 playerId = "player1",
                 eventId = null, // Podría ser nulo si es una ficha general
@@ -169,10 +181,13 @@ fun HomeScreen(navController: NavController) {
                 blocks = 1,
                 turnovers = 3,
                 freeThrowsMade = 2,
-                freeThrowsAttempted = 2
+                freeThrowsAttempted = 2,
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             ),
             PerformanceSheet(
-                id = "ps2",
+                id = 105L, // ID de tipo Long
                 date = LocalDate.of(2023, 10, 29),
                 playerId = "player1",
                 eventId = null,
@@ -183,7 +198,10 @@ fun HomeScreen(navController: NavController) {
                 blocks = 0,
                 turnovers = 2,
                 freeThrowsMade = 1,
-                freeThrowsAttempted = 2
+                freeThrowsAttempted = 2,
+                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
+                threePointersMade = 0, threePointersAttempted = 0,
+                minutesPlayed = 0, plusMinus = 0
             )
         )
     }
@@ -438,8 +456,8 @@ fun HomeScreen(navController: NavController) {
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
                                 // Renderiza las tarjetas de eventos usando los nuevos datos
-                                sampleEventsAndStats.forEach { (event, playerStats) ->
-                                    EventItemCard(event = event, playerStats = playerStats, playerName = currentPlayer.name)
+                                sampleEventsAndStats.forEach { (event, performanceSheet) ->
+                                    EventItemCard(event = event, playerStats = performanceSheet, playerName = currentPlayer.name)
                                     Spacer(modifier = Modifier.height(12.dp))
                                 }
                             }
@@ -471,69 +489,6 @@ fun HomeScreen(navController: NavController) {
             )
         }
     )
-}
-
-
-// Muestra las Estas de un jugador.
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun EventItemCard(event: Event, playerStats: PlayerStats, playerName: String, modifier:Modifier = Modifier) {
-    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy, HH:mm")
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = event.dateTime.format(formatter),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = DarkText.copy(alpha = 0.7f)
-                    )
-                    Text(
-                        text = if (event.type == EventType.MATCH && event.opponent != null) "vs ${event.opponent}" else event.notes ?: "Entrenamiento",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = DarkText
-                    )
-                }
-                Text(
-                    text = if (event.type == EventType.MATCH) "Partido" else "Entrenamiento",
-                    color = PrimaryOrange,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .background(PrimaryOrange.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Divider(color = Color(0xFFEEEEEE))
-            Spacer(modifier = Modifier.height(8.dp))
-            // Estadísticas individuales destacadas para el jugador
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem("Pts", playerStats.points) // Abreviado para que quepa mejor
-                StatItem("Asis", playerStats.assists) // Abreviado
-                StatItem("Reb", playerStats.totalRebounds) // Usar totalRebounds
-                StatItem("Rob", playerStats.steals) // Abreviado
-                StatItem("Bloq", playerStats.blocks) // Abreviado
-            }
-        }
-    }
 }
 
 /**
@@ -580,10 +535,3 @@ fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, 
     }
 }
 
-@Composable
-fun StatItem(label: String, value: Int) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = label, style = MaterialTheme.typography.labelSmall, color = DarkText.copy(alpha = 0.7f))
-        Text(text = value.toString(), style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = PrimaryOrange)
-    }
-}

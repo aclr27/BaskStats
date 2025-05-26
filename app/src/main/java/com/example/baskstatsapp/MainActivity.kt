@@ -10,9 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavType // <-- Asegúrate de que esto está importado
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument // <-- Asegúrate de que esto está importado
 import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 
 
@@ -25,46 +27,41 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    /*
-                    * Creamos el Nav controler (para controlar la navegación entre
-                    * Las escenas.
-                    */
                     val navController = rememberNavController()
 
-                    //Definimos la pantalla de inicio de nuestra navegación.
                     NavHost(
                         navController = navController,
                         startDestination = "login_screen"
                     ){
-                        //Definimos la ruta para la pantala de Login
                         composable("login_screen"){
-                            //Pasamos el navController a LoginScreen para que pueda navegar
                             LoginScreen(navController = navController)
                         }
-                        //Definimos la ruta para la pantallad de registro.
                         composable("registration_screen"){
                             RegistrationScreen(navController = navController)
                         }
-                        //Definimos la ruta para la ruta para el Home
                         composable("home_screen"){
                             HomeScreen(navController = navController)
                         }
-                        //Definimos la ruta para la escena de eventos.
                         composable("events_screen") {
                             EventsScreen(navController = navController)
                         }
-                        //{eventId} es un argumento que se le pasa a la pantalla.
-                        composable("event_detail_screen/{eventId}") { backStackEntry ->
-                            val eventId = backStackEntry.arguments?.getString("eventId")
+                        // *** ESTO ES CLAVE: Definir el argumento como LongType ***
+                        composable(
+                            route = "event_detail_screen/{eventId}",
+                            arguments = listOf(navArgument("eventId") { type = NavType.LongType })
+                        ) { backStackEntry ->
+                            val eventId = backStackEntry.arguments?.getLong("eventId") // Obtener como Long
                             EventDetailScreen(navController = navController, eventId = eventId)
                         }
-                        //Ruta para la escena de performance Sheets
                         composable("performance_sheets_screen") {
                             PerformanceSheetsScreen(navController = navController)
                         }
-                        //Ruta para la escena de detalles de rendimiento.
-                        composable("performance_sheet_detail_screen/{sheetId}") { backStackEntry ->
-                            val sheetId = backStackEntry.arguments?.getString("sheetId")
+                        // *** ESTO ES CLAVE: Definir el argumento como LongType ***
+                        composable(
+                            route = "performance_sheet_detail_screen/{sheetId}",
+                            arguments = listOf(navArgument("sheetId") { type = NavType.LongType })
+                        ) { backStackEntry ->
+                            val sheetId = backStackEntry.arguments?.getLong("sheetId") // Obtener como Long
                             PerformanceSheetDetailScreen(navController = navController, sheetId = sheetId)
                         }
 
@@ -86,10 +83,3 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BaskStatsAppTheme {
-        Greeting("Android")
-    }
-}
