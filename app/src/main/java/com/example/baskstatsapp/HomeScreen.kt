@@ -546,7 +546,7 @@ fun EventItemCard(event: Event, playerStats: PlayerStats, playerName: String, mo
 fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, modifier: Modifier = Modifier) {
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier,
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White

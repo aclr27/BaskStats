@@ -130,18 +130,15 @@ fun PerformanceSheetsScreen(navController: NavController) {
                 val playerNameForCards = "Tu Jugador" // Podría venir de un ViewModel o un estado de autenticación
 
                 items(samplePerformanceSheets) { sheet ->
-                    // Reutilizamos la composable PerformanceItemCard de HomeScreen
-                    // Si clicamos en una tarjeta, navegamos a la pantalla de detalle de la ficha
-                    // TODO: Pasar el ID de la ficha para la pantalla de detalle
                     PerformanceItemCard(
                         performanceSheet = sheet,
                         playerName = playerNameForCards,
-                        modifier = Modifier.fillMaxWidth().clickable {
-                            // Implementar navegación a PerformanceSheetDetailScreen
-                            // navController.navigate("performance_sheet_detail_screen/${sheet.id}")
+                        modifier = Modifier.fillMaxWidth().clickable { // <-- Aquí está el clickable
+                            navController.navigate("performance_sheet_detail_screen/${sheet.id}")
                             println("Navegando al detalle de la ficha: ${sheet.id}")
                         }
                     )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }

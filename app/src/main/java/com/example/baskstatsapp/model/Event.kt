@@ -1,14 +1,18 @@
 package com.example.baskstatsapp.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import java.time.LocalDateTime
 
 /**
  * Representa un evento de baloncesto, que puede ser un partido o un entrenamiento.
  * Contiene información general del evento y una lista de las estadísticas individuales de los jugadores.
  */
+@Entity(tableName = "events")
 data class Event(
+    @PrimaryKey(autoGenerate = true)
     /** Identificador único del evento. */
-    val id: String,
+    val id: Long = 0, //Importante que sea long para poder autogenerar.
     /** Tipo de evento: [EventType.MATCH] para partido, [EventType.TRAINING] para entrenamiento. */
     val type: EventType,
     /** Fecha y hora exacta en la que ocurrió el evento. */
@@ -21,8 +25,6 @@ data class Event(
     val opponentScore: Int? = null,
     /** Notas o comentarios adicionales sobre el evento. */
     val notes: String? = null,
-    /** Lista de las estadísticas individuales registradas para los jugadores participantes en este evento. */
-    val playerStatsList: List<PlayerStats> = emptyList()
 )
 
 /**

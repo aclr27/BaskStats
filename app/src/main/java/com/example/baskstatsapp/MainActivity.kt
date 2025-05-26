@@ -62,6 +62,15 @@ class MainActivity : ComponentActivity() {
                         composable("performance_sheets_screen") {
                             PerformanceSheetsScreen(navController = navController)
                         }
+                        //Ruta para la escena de detalles de rendimiento.
+                        composable("performance_sheet_detail_screen/{sheetId}") { backStackEntry ->
+                            val sheetId = backStackEntry.arguments?.getString("sheetId")
+                            PerformanceSheetDetailScreen(navController = navController, sheetId = sheetId)
+                        }
+
+                        composable("add_event_screen") {
+                            AddEventScreen(navController = navController)
+                        }
                     }
                 }
             }
