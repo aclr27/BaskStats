@@ -6,56 +6,69 @@ import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.PerformanceSheet
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Puente entra la app y la bdd. La interfaz de usuario pasa por el Repository. Así el Repository
- * pasa a los Daos que hagan CRUD en la bdd.
- */
+// Esta clase actúa como una capa de abstracción entre tus ViewModels y tus DAOs (Room).
+// Es útil para centralizar la lógica de acceso a datos, manejar múltiples fuentes de datos (ej. red + BD),
+// y proporcionar una API más limpia a los ViewModels.
 class AppRepository(
     private val eventDao: EventDao,
     private val performanceSheetDao: PerformanceSheetDao
 ) {
-    // Event operations
-    suspend fun insertEvent(event: Event): Long {
-        return eventDao.insert(event)
-    }
 
-    suspend fun updateEvent(event: Event) {
-        eventDao.update(event)
-    }
+    // --- Métodos para Eventos ---
 
-    suspend fun deleteEvent(event: Event) {
-        eventDao.delete(event)
-    }
-
+    // Obtiene todos los eventos. El tipo de retorno coincide con el DAO.
     fun getAllEvents(): Flow<List<Event>> {
         return eventDao.getAllEvents()
     }
 
-    fun getEventById(id: Long): Flow<Event> {
+    // Obtiene un evento por su ID. El tipo de retorno coincide con el DAO.
+    fun getEventById(id: Long): Flow<Event?> { // Coincide con el DAO que devuelve Flow<Event?>
         return eventDao.getEventById(id)
     }
 
-    // PerformanceSheet operations
-    suspend fun insertPerformanceSheet(performanceSheet: PerformanceSheet): Long {
-        return performanceSheetDao.insert(performanceSheet)
+    // Inserta un evento.
+    suspend fun insertEvent(event: Event): Long {
+        return eventDao.insert(event)
     }
 
-    suspend fun updatePerformanceSheet(performanceSheet: PerformanceSheet) {
-        performanceSheetDao.update(performanceSheet)
+    // Actualiza un evento.
+    suspend fun updateEvent(event: Event) {
+        eventDao.update(event)
     }
 
-    suspend fun deletePerformanceSheet(performanceSheet: PerformanceSheet) {
-        performanceSheetDao.delete(performanceSheet)
+    // Elimina un evento.
+    suspend fun deleteEvent(event: Event) {
+        eventDao.delete(event)
     }
 
+    // --- Métodos para Fichas de Rendimiento ---
+
+    // Obtiene todas las fichas de rendimiento. El tipo de retorno coincide con el DAO.
     fun getAllPerformanceSheets(): Flow<List<PerformanceSheet>> {
         return performanceSheetDao.getAllPerformanceSheets()
     }
 
-    fun getPerformanceSheetById(id: Long): Flow<PerformanceSheet> {
+    // Obtiene una ficha de rendimiento por su ID. El tipo de retorno coincide con el DAO.
+    fun getPerformanceSheetById(id: Long): Flow<PerformanceSheet?> {
         return performanceSheetDao.getPerformanceSheetById(id)
     }
 
+    // Inserta una ficha de rendimiento.
+    suspend fun insertPerformanceSheet(sheet: PerformanceSheet): Long {
+        return performanceSheetDao.insert(sheet)
+    }
+
+    // Actualiza una ficha de rendimiento.
+    suspend fun updatePerformanceSheet(sheet: PerformanceSheet) {
+        performanceSheetDao.update(sheet)
+    }
+
+    // Elimina una ficha de rendimiento.
+    suspend fun deletePerformanceSheet(sheet: PerformanceSheet) {
+        performanceSheetDao.delete(sheet)
+    }
+
+    // Obtiene fichas de rendimiento para un evento específico.
     fun getPerformanceSheetsForEvent(eventId: Long): Flow<List<PerformanceSheet>> {
         return performanceSheetDao.getPerformanceSheetsForEvent(eventId)
     }

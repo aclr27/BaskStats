@@ -25,6 +25,8 @@ data class Event(
     val opponentScore: Int? = null,
     /** Notas o comentarios adicionales sobre el evento. */
     val notes: String? = null,
+
+    val playerId: Long?
 )
 
 /**
@@ -34,5 +36,6 @@ enum class EventType {
     /** Indica que el evento es un partido oficial o amistoso. */
     MATCH,
     /** Indica que el evento es una sesión de entrenamiento. */
-    TRAINING
+    TRAINING,
+    OTHER
 }

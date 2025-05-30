@@ -1,9 +1,10 @@
 package com.example.baskstatsapp.converters
 
 import androidx.room.TypeConverter
+import java.time.Instant // <-- ¡AÑADE ESTA IMPORTACIÓN!
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.time.ZoneOffset // Para convertir a y desde Long
+import java.time.ZoneOffset
 
 /**
  * [Converters] es como un "diccionario de traducción" para tu base de datos.
@@ -17,21 +18,24 @@ import java.time.ZoneOffset // Para convertir a y desde Long
 class Converters {
 
     /**
-     * Regla para traducir un NÚMERO GRANDE (Long, como un sello de tiempo) a una FECHA Y HORA (LocalDateTime).
-     * @param value Este es el número que Room saca de la base de datos.
+     * Regla para traducir un NÚMERO GRANDE (Long, como un sello de tiempo en milisegundos) a una FECHA Y HORA (LocalDateTime).
+     * @param value Este es el número que Room saca de la base de datos (milisegundos desde la época).
      * @return Te devuelve la fecha y hora que tu app entiende.
      */
     @TypeConverter
     fun fromTimestamp(value: Long?): LocalDateTime? {
         // Si el número es nulo, la fecha y hora también es nula.
         // Si hay un número, lo convierte. 'ZoneOffset.UTC' es para que la hora no se líe con los cambios de horario de verano/invierno o países.
-        return value?.let { LocalDateTime.ofEpochSecond(it / 1000, (it % 1000 * 1_000_000).toInt(), ZoneOffset.UTC) }
+        return value?.let {
+            // CAMBIO AQUÍ: Usamos Instant.ofEpochMilli para mayor robustez
+            Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDateTime()
+        }
     }
 
     /**
      * Regla para traducir una FECHA Y HORA (LocalDateTime) a un NÚMERO GRANDE (Long) para guardar en la base de datos.
      * @param date Esta es la fecha y hora que tu app quiere guardar.
-     * @return Te devuelve el número que la base de datos guardará.
+     * @return Te devuelve el número que la base de datos guardará (milisegundos desde la época).
      */
     @TypeConverter
     fun dateToTimestamp(date: LocalDateTime?): Long? {

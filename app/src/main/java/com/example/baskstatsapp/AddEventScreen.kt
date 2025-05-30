@@ -4,16 +4,21 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.widget.DatePicker
 import android.widget.TimePicker
+import android.widget.Toast // Asegúrate de esta importación
+import android.os.Build // Necesario para @RequiresApi
+import androidx.annotation.RequiresApi // Necesario para @RequiresApi
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.AccessTime // <-- ¡Importa este icono para la hora!
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,33 +26,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType // Necesario para KeyboardOptions
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.EventType
+import com.example.baskstatsapp.model.PerformanceSheet
 import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.LocalTime // Necesario para LocalTime.of
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import kotlinx.coroutines.launch
-import com.example.baskstatsapp.model.Event
-import com.example.baskstatsapp.model.PerformanceSheet
-import com.example.baskstatsapp.viewmodel.EventViewModel
-import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel // Necesitas este si vas a insertar una PerformanceSheet aquí
-// Importa tus componentes StatInputField y ShotInputField desde donde los hayas centralizado
-import com.example.baskstatsapp.StatInputField // Asume que StatInputField está en el mismo paquete o es de nivel superior
-import com.example.baskstatsapp.ShotInputField // Asume que ShotInputField está en el mismo paquete o es de nivel superior
 
-import android.os.Build // Para @RequiresApi
-import androidx.annotation.RequiresApi // Para @RequiresApi
+// Asegúrate de que StatInputField y ShotInputField están accesibles.
+// Si están en un paquete diferente, ajusta la importación, e.g.:
+// import com.example.baskstatsapp.composables.StatInputField
+// import com.example.baskstatsapp.composables.ShotInputField
+// Dejo las que tienes por ahora, asumiendo que están en el mismo paquete o son de nivel superior.
+import com.example.baskstatsapp.StatInputField
+import com.example.baskstatsapp.ShotInputField
+
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.O) // Añadir esta anotación
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddEventScreen(
     navController: NavController,
@@ -73,7 +84,7 @@ fun AddEventScreen(
     var defensiveRebounds by remember { mutableStateOf("") }
     var steals by remember { mutableStateOf("") }
     var blocks by remember { mutableStateOf("") }
-    var turnovers by remember { mutableStateOf("") }
+    var turnovers by remember { mutableStateOf("") } // <-- Corregido: mutableEof -> mutableStateOf
     var fouls by remember { mutableStateOf("") }
     var twoPointersMade by remember { mutableStateOf("") }
     var twoPointersAttempted by remember { mutableStateOf("") }
@@ -82,7 +93,7 @@ fun AddEventScreen(
     var freeThrowsMade by remember { mutableStateOf("") }
     var freeThrowsAttempted by remember { mutableStateOf("") }
     var minutesPlayed by remember { mutableStateOf("") }
-    var plusMinus by remember { mutableStateOf("") } // Nota: Plus/Minus puede ser negativo. Tu StatInputField ya lo maneja si se hizo como en PerformanceSheetForm.
+    var plusMinus by remember { mutableStateOf("") }
 
     val formatterDate = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val formatterTime = DateTimeFormatter.ofPattern("HH:mm")
@@ -103,9 +114,10 @@ fun AddEventScreen(
     val timePickerDialog = TimePickerDialog(
         context,
         { _: TimePicker, selectedHour: Int, selectedMinute: Int ->
-            selectedDateTime = selectedDateTime
-                .withHour(selectedHour)
-                .withMinute(selectedMinute)
+            selectedDateTime = LocalDateTime.of(
+                selectedDateTime.toLocalDate(), // Mantener la fecha actual
+                LocalTime.of(selectedHour, selectedMinute) // Actualizar la hora
+            )
         }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true
     )
 
@@ -176,6 +188,18 @@ fun AddEventScreen(
                     ) {
                         Text("Entrenamiento")
                     }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = { eventType = EventType.OTHER },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (eventType == EventType.OTHER) PrimaryOrange else Color.Transparent,
+                            contentColor = if (eventType == EventType.OTHER) Color.White else PrimaryOrange
+                        ),
+                        border = BorderStroke(1.dp, PrimaryOrange)
+                    ) {
+                        Text("Otro")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -206,7 +230,7 @@ fun AddEventScreen(
                     readOnly = true,
                     trailingIcon = {
                         IconButton(onClick = { timePickerDialog.show() }) {
-                            Icon(Icons.Filled.DateRange, contentDescription = "Seleccionar Hora")
+                            Icon(Icons.Filled.AccessTime, contentDescription = "Seleccionar Hora")
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -242,6 +266,7 @@ fun AddEventScreen(
                             value = teamScore,
                             onValueChange = { teamScore = it.filter { char -> char.isDigit() } },
                             label = { Text("Puntuación Equipo") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryOrange,
@@ -255,6 +280,7 @@ fun AddEventScreen(
                             value = opponentScore,
                             onValueChange = { opponentScore = it.filter { char -> char.isDigit() } },
                             label = { Text("Puntuación Rival") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.weight(1f),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryOrange,
@@ -295,7 +321,6 @@ fun AddEventScreen(
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                // Usar la StatInputField centralizada
                 StatInputField("Puntos", points, { points = it })
                 StatInputField("Asistencias", assists, { assists = it })
                 StatInputField("Rebotes Totales", totalRebounds, { totalRebounds = it })
@@ -313,8 +338,6 @@ fun AddEventScreen(
                     color = DarkText,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
-                // Reutiliza ShotInputField de PerformanceSheetForm si la definiste genérica allí
-                // Si no, copia su lógica aquí, pero intenta mantenerla centralizada.
                 ShotInputField("Tiros de 2 Anotados", twoPointersMade, { twoPointersMade = it })
                 ShotInputField("Tiros de 2 Intentados", twoPointersAttempted, { twoPointersAttempted = it })
                 ShotInputField("Tiros de 3 Anotados", threePointersMade, { threePointersMade = it })
@@ -324,52 +347,77 @@ fun AddEventScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
                 StatInputField("Minutos Jugados", minutesPlayed, { minutesPlayed = it })
-                StatInputField("Plus/Minus", plusMinus, { plusMinus = it }) // Tu StatInputField ya maneja el "-" si lo implementaste como te sugerí
+                StatInputField("Plus/Minus", plusMinus, { plusMinus = it })
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            val event = Event(
+                            val currentLoggedInPlayerId = MainActivity.currentLoggedInPlayerId
+
+                            if (currentLoggedInPlayerId == null) {
+                                Toast.makeText(context, "No hay jugador logueado para guardar estadísticas.", Toast.LENGTH_LONG).show()
+                                return@launch
+                            }
+
+                            if (eventType == EventType.MATCH) {
+                                if (opponent.isBlank()) {
+                                    Toast.makeText(context, "El nombre del rival no puede estar vacío para un partido.", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+                                if (teamScore.toIntOrNull() == null || opponentScore.toIntOrNull() == null) {
+                                    Toast.makeText(context, "Las puntuaciones deben ser números válidos.", Toast.LENGTH_SHORT).show()
+                                    return@launch
+                                }
+                            }
+
+                            val newEvent = Event(
                                 type = eventType,
                                 dateTime = selectedDateTime,
                                 opponent = if (eventType == EventType.MATCH) opponent.takeIf { it.isNotBlank() } else null,
                                 teamScore = if (eventType == EventType.MATCH) teamScore.toIntOrNull() else null,
                                 opponentScore = if (eventType == EventType.MATCH) opponentScore.toIntOrNull() else null,
-                                notes = notes.takeIf { it.isNotBlank() }
+                                notes = notes.takeIf { it.isNotBlank() },
+                                playerId = currentLoggedInPlayerId // <--- Pásalo aquí
                             )
 
-                            // Insertar el evento y obtener su ID
-                            val eventId = eventViewModel.insertEvent(event)
+                            val eventId = eventViewModel.insertEvent(newEvent)
 
-                            val performanceSheet = PerformanceSheet(
-                                date = selectedDateTime.toLocalDate(), // Usar LocalDate del evento
-                                playerId = "jugador_actual", // TODO: Reemplazar con el ID del jugador real del usuario loggeado
-                                eventId = eventId, // Asociar al evento recién creado
-                                points = points.toIntOrNull() ?: 0,
-                                assists = assists.toIntOrNull() ?: 0,
-                                rebounds = totalRebounds.toIntOrNull() ?: 0,
-                                offensiveRebounds = offensiveRebounds.toIntOrNull() ?: 0,
-                                defensiveRebounds = defensiveRebounds.toIntOrNull() ?: 0,
-                                steals = steals.toIntOrNull() ?: 0,
-                                blocks = blocks.toIntOrNull() ?: 0,
-                                turnovers = turnovers.toIntOrNull() ?: 0,
-                                freeThrowsMade = freeThrowsMade.toIntOrNull() ?: 0,
-                                freeThrowsAttempted = freeThrowsAttempted.toIntOrNull() ?: 0,
-                                twoPointersMade = twoPointersMade.toIntOrNull() ?: 0,
-                                twoPointersAttempted = twoPointersAttempted.toIntOrNull() ?: 0,
-                                threePointersMade = threePointersMade.toIntOrNull() ?: 0,
-                                threePointersAttempted = threePointersAttempted.toIntOrNull() ?: 0,
-                                fouls = fouls.toIntOrNull() ?: 0,
-                                minutesPlayed = minutesPlayed.toIntOrNull() ?: 0,
-                                plusMinus = plusMinus.toIntOrNull() ?: 0
-                            )
-                            // Insertar la ficha de rendimiento usando el performanceSheetViewModel
-                            performanceSheetViewModel.insertPerformanceSheet(performanceSheet)
+                            if (eventId > 0L) { // <-- Comparación de Long con Long
+                                val performanceSheet = PerformanceSheet(
+                                    date = selectedDateTime.toLocalDate(),
+                                    playerId = currentLoggedInPlayerId,
+                                    eventId = eventId,
+                                    points = points.toIntOrNull() ?: 0,
+                                    assists = assists.toIntOrNull() ?: 0,
+                                    rebounds = totalRebounds.toIntOrNull() ?: 0,
+                                    offensiveRebounds = offensiveRebounds.toIntOrNull() ?: 0,
+                                    defensiveRebounds = defensiveRebounds.toIntOrNull() ?: 0,
+                                    steals = steals.toIntOrNull() ?: 0,
+                                    blocks = blocks.toIntOrNull() ?: 0,
+                                    turnovers = turnovers.toIntOrNull() ?: 0,
+                                    freeThrowsMade = freeThrowsMade.toIntOrNull() ?: 0,
+                                    freeThrowsAttempted = freeThrowsAttempted.toIntOrNull() ?: 0,
+                                    twoPointersMade = twoPointersMade.toIntOrNull() ?: 0,
+                                    twoPointersAttempted = twoPointersAttempted.toIntOrNull() ?: 0,
+                                    threePointersMade = threePointersMade.toIntOrNull() ?: 0,
+                                    threePointersAttempted = threePointersAttempted.toIntOrNull() ?: 0,
+                                    fouls = fouls.toIntOrNull() ?: 0,
+                                    minutesPlayed = minutesPlayed.toIntOrNull() ?: 0,
+                                    plusMinus = plusMinus.toIntOrNull() ?: 0
+                                )
+                                val sheetId = performanceSheetViewModel.addPerformanceSheet(performanceSheet)
 
-                            println("Evento y ficha de rendimiento guardados con IDs: Evento=$eventId, Ficha=${performanceSheet.id}")
-                            navController.navigateUp() // Volver a la pantalla anterior después de guardar
+                                if (sheetId > 0L) { // <-- Comparación de Long con Long
+                                    Toast.makeText(context, "Evento y ficha de rendimiento guardados con éxito!", Toast.LENGTH_SHORT).show()
+                                    navController.navigateUp()
+                                } else {
+                                    Toast.makeText(context, "Error al guardar la ficha de rendimiento.", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Error al guardar el evento.", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     },
                     modifier = Modifier
@@ -384,4 +432,48 @@ fun AddEventScreen(
             }
         }
     )
+}
+
+// Asegúrate de que EventTypeSelector y la extensión displayName() están fuera del composable principal
+// y que el preview tiene todos los ViewModels necesarios como mocks
+@Composable
+fun EventTypeSelector(
+    selectedType: EventType,
+    onTypeSelected: (EventType) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        EventType.entries.forEach { type -> // O EventType.values() si no tienes entries
+            Button(
+                onClick = { onTypeSelected(type) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedType == type) PrimaryOrange else Color.Transparent,
+                    contentColor = if (selectedType == type) Color.White else DarkText
+                ),
+                elevation = ButtonDefaults.buttonElevation(0.dp),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Text(type.displayName(), fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+// Función de extensión para obtener el nombre legible del EventType
+fun EventType.displayName(): String {
+    return when (this) {
+        EventType.MATCH -> "Partido"
+        EventType.TRAINING -> "Entrenamiento"
+        EventType.OTHER -> "Otro"
+    }
 }

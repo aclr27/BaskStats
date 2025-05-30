@@ -62,8 +62,19 @@ fun HomeScreen(navController: NavController,
     val scope = rememberCoroutineScope()
 
     // Datos de prueba (Mock Data) con los nuevos modelos
-    val currentPlayer = remember { Player(id = "player1", name = "Tu Jugador", number = 23, position = "Escolta") }
-
+    val currentPlayer = remember {
+        Player(
+            id = 1L, // Usar un Long para el ID
+            name = "Tu Jugador",
+            email = "jugador@ejemplo.com", // Añadir un email de prueba
+            passwordHash = "unHashDeEjemplo", // Añadir un hash de contraseña de prueba
+            number = 23,
+            position = "Escolta",
+            teamId = null,
+            photoUrl = null,
+            createdAt = System.currentTimeMillis() // Añadir createdAt
+        )
+    }
     // Datos de ejemplo para eventos y sus estadísticas individuales
     // ATENCIÓN: Si vas a usar PerformanceSheet en EventDetailScreen, aquí deberías usarlo también
     // o asegurarte de que PlayerStats es un modelo distinto para datos temporales.
@@ -495,48 +506,3 @@ fun HomeScreen(navController: NavController,
         }
     )
 }
-
-/**
- * Fichas de rendimiento que dan más detalles del jugador
- */
-
-// NUEVA COMPOSABLE para Fichas de Rendimiento (más detalles del jugador)
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, modifier: Modifier = Modifier) {
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Text(
-                text = "Ficha de ${playerName} - ${performanceSheet.date.format(dateFormatter)}",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = DarkText,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Divider(color = Color(0xFFEEEEEE))
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                StatItem("Pts", performanceSheet.points)
-                StatItem("Asis", performanceSheet.assists)
-                StatItem("Reb", performanceSheet.rebounds)
-                StatItem("Rob", performanceSheet.steals)
-                StatItem("Bloq", performanceSheet.blocks)
-            }
-        }
-    }
-}
-

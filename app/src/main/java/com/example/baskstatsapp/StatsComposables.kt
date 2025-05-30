@@ -27,6 +27,53 @@ import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import java.time.format.DateTimeFormatter
 
 // Este archivo contendrá Composables reutilizables para estadísticas
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+/**
+ * Fichas de rendimiento que dan más detalles del jugador
+ */
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, modifier: Modifier = Modifier) {
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Ficha de ${playerName} - ${performanceSheet.date.format(dateFormatter)}",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = DarkText,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Divider(color = Color(0xFFEEEEEE))
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceAround,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                StatItem("Pts", performanceSheet.points)
+                StatItem("Asis", performanceSheet.assists)
+                StatItem("Reb", performanceSheet.rebounds)
+                StatItem("Rob", performanceSheet.steals)
+                StatItem("Bloq", performanceSheet.blocks)
+            }
+        }
+    }
+}
 
 @Composable
 fun StatItem(label: String, value: Int) {
@@ -44,6 +91,8 @@ fun StatItem(label: String, value: Int) {
         )
     }
 }
+
+
 
 @Composable
 fun StatRow(label: String, value: String, percentage: String? = null) {

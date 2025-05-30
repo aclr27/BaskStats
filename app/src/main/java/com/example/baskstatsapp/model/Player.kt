@@ -1,19 +1,19 @@
 package com.example.baskstatsapp.model
 
-/**
- * Representa a un jugador de baloncesto.
- */
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "players")
 data class Player(
-    /** Identificador único del jugador. */
-    val id: String,
-    /** Nombre completo del jugador. */
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
     val name: String,
-    /** Número de camiseta del jugador. Nulo si no tiene uno asignado o es desconocido. */
+    val username: String,
+    val email: String,
+    val passwordHash: String,
     val number: Int? = null,
-    /** Posición de juego del jugador (ej. "Base", "Escolta", "Alero", "Ala-Pívot", "Pívot"). */
     val position: String? = null,
-    /** Identificador del equipo al que pertenece el jugador. Nulo si no está en un equipo o no se especifica. */
     val teamId: String? = null,
-    /** URL de la foto de perfil del jugador. Nulo si no hay foto. */
-    val photoUrl: String? = null
+    val photoUrl: String? = null,
+    val createdAt: Long = System.currentTimeMillis()
 )

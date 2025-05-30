@@ -1,8 +1,6 @@
 package com.example.baskstatsapp
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,7 +9,9 @@ import androidx.compose.material.icons.filled.SportsBasketball
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -21,12 +21,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,18 +39,22 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
-
-import androidx.compose.material3.Icon // Importación correcta del Icon de Material3
-import androidx.compose.material3.OutlinedButton
+import com.example.baskstatsapp.viewmodel.PlayerViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
-    var usernameOrEmail by remember { mutableStateOf("") }
+fun LoginScreen(
+    navController: NavController,
+    playerViewModel: PlayerViewModel,
+    onLoginSuccess: (Long) -> Unit // Callback para cuando el login sea exitoso
+) {
+    var email by remember { mutableStateOf("") } // Cambiado a email
     var password by remember { mutableStateOf("") }
     var passwordVisibility by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val scope = rememberCoroutineScope() // Para lanzar coroutines
 
     val montserratFontFamily = FontFamily(
         Font(R.font.montserrat_variablefont_wght, FontWeight.Normal),
@@ -58,19 +62,17 @@ fun LoginScreen(navController: NavController) {
     )
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFFF8F8F8)) {
-        // Usamos un Box para contener y alinear verticalmente el contenido principal
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 32.dp),
-            contentAlignment = Alignment.Center // Esto centrará todo el contenido del Box
+            contentAlignment = Alignment.Center
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(), // El Column interno puede ocupar todo el ancho
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top // Usamos Top aquí porque el Box ya centrará el Column
+                verticalArrangement = Arrangement.Top
             ) {
-                // TITULO CON ICONO (Baloncesto)
                 Row(
                     modifier = Modifier.padding(bottom = 32.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -93,11 +95,11 @@ fun LoginScreen(navController: NavController) {
                     )
                 }
 
-                // Campo de Usuario o Correo
+                // Campo de Correo Electrónico
                 TextField(
-                    value = usernameOrEmail,
-                    onValueChange = { usernameOrEmail = it },
-                    label = { Text("Nombre de usuario o correo electrónico") },
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Correo electrónico") },
                     colors = TextFieldDefaults.textFieldColors(
                         containerColor = Color.White,
                         focusedIndicatorColor = Color.Transparent,
@@ -113,7 +115,7 @@ fun LoginScreen(navController: NavController) {
                         .padding(bottom = 16.dp)
                 )
 
-                // Campo de contraseña con "Mostrar"
+                // Campo de contraseña
                 TextField(
                     value = password,
                     onValueChange = { password = it },
@@ -145,16 +147,19 @@ fun LoginScreen(navController: NavController) {
 
                 Button(
                     onClick = {
-                        val validUsername = "user@example.com"
-                        val validPassword = "123"
+                        if (email.isBlank() || password.isBlank()) {
+                            Toast.makeText(context, "Correo y contraseña no pueden estar vacíos", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
 
-                        if (usernameOrEmail == validUsername && password == validPassword) {
-                            Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                            navController.navigate("home_screen") {
-                                popUpTo("loginScreen") { inclusive = true }
+                        scope.launch {
+                            val player = playerViewModel.loginPlayer(email, password)
+                            if (player != null) {
+                                Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                                onLoginSuccess(player.id) // Llamar al callback de éxito con el ID del jugador
+                            } else {
+                                Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
                             }
-                        } else {
-                            Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
@@ -178,21 +183,15 @@ fun LoginScreen(navController: NavController) {
                         fontSize = 14.sp
                     )
                 }
-
-                // Spacer para empujar el botón "Registrarse" al final, fuera del Box principal centrado.
-                // Este spacer debe estar fuera del Column centrado verticalmente si lo queremos abajo del todo.
             }
 
-            // **BOTÓN "REGISTRARSE"**
-            // Lo colocamos directamente dentro del Box para que podamos usar Alignment.BottomCenter
-            // y que no sea afectado por el centrado vertical del Column de arriba.
             OutlinedButton(
-                onClick = {  navController.navigate("registration_screen")},
+                onClick = { navController.navigate("registration_screen")},
                 modifier = Modifier
-                    .align(Alignment.BottomCenter) // Alinea este botón específicamente abajo y al centro
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(90.dp)
-                    .padding(bottom = 32.dp), // Espacio al final de la pantalla
+                    .padding(bottom = 32.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = PrimaryOrange

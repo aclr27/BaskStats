@@ -4,41 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.baskstatsapp.dao.PerformanceSheetDao
 import com.example.baskstatsapp.model.PerformanceSheet
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 class PerformanceSheetViewModel(private val performanceSheetDao: PerformanceSheetDao) : ViewModel() {
 
-    val allPerformanceSheets: StateFlow<List<PerformanceSheet>> = performanceSheetDao.getAllPerformanceSheets()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
-
-    suspend fun getPerformanceSheetById(id: Long): PerformanceSheet? {
-        return performanceSheetDao.getPerformanceSheetById(id).firstOrNull()
+    // Método para añadir una nueva ficha de rendimiento
+    suspend fun addPerformanceSheet(sheet: PerformanceSheet): Long { // <-- ¡ASEGÚRATE DE QUE DEVUELVE LONG!
+        return performanceSheetDao.insert(sheet)
     }
 
-    // Para obtener fichas vinculadas a un evento específico
-    fun getPerformanceSheetsForEvent(eventId: Long): StateFlow<List<PerformanceSheet>> {
+    fun getAllPerformanceSheets(): Flow<List<PerformanceSheet>> {
+        return performanceSheetDao.getAllPerformanceSheets()
+    }
+
+    fun getPerformanceSheetById(sheetId: Long): Flow<PerformanceSheet?> {
+        return performanceSheetDao.getPerformanceSheetById(sheetId)
+    }
+
+    fun getPerformanceSheetsForEvent(eventId: Long): Flow<List<PerformanceSheet>> {
         return performanceSheetDao.getPerformanceSheetsForEvent(eventId)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
     }
 
-    fun insertPerformanceSheet(sheet: PerformanceSheet) {
-        viewModelScope.launch {
-            performanceSheetDao.insert(sheet)
-        }
+    fun getPerformanceSheetsForPlayer(playerId: Long): Flow<List<PerformanceSheet>> {
+        return performanceSheetDao.getPerformanceSheetsForPlayer(playerId)
+    }
+
+    fun getPerformanceSheetsForPlayerAndEvent(playerId: Long, eventId: Long): Flow<PerformanceSheet?> {
+        return performanceSheetDao.getPerformanceSheetsForPlayerAndEvent(playerId, eventId)
     }
 
     fun updatePerformanceSheet(sheet: PerformanceSheet) {

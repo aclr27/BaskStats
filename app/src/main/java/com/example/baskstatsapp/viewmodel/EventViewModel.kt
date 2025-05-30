@@ -7,29 +7,46 @@ import com.example.baskstatsapp.dao.EventDao
 import com.example.baskstatsapp.model.Event
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import java.time.LocalDate // Asegúrate de esta importación para getEventsByDate
 
 class EventViewModel(private val eventDao: EventDao) : ViewModel() {
 
-    val allEvents: Flow<List<Event>> = eventDao.getAllEvents()
+    // Puedes mantener val allEvents o simplemente usar la función getAllEvents()
+    // val allEvents: Flow<List<Event>> = eventDao.getAllEvents()
 
-    // Asegúrate de que insertEvent devuelve Long
-    suspend fun insertEvent(event: Event): Long { // <--- Importante: Devuelve Long
-        return eventDao.insert(event) // El método insert del DAO devuelve Long
+    fun getAllEvents(): Flow<List<Event>> = eventDao.getAllEvents()
+
+    suspend fun insertEvent(event: Event): Long {
+        return eventDao.insert(event)
     }
 
-    suspend fun getEventById(id: Long): Flow<Event?> {
+    fun getEventById(id: Long): Flow<Event?> {
         return eventDao.getEventById(id)
     }
 
-    suspend fun updateEvent(event: Event) {
-        eventDao.update(event)
+    // ¡¡¡ESTA ES LA FUNCIÓN QUE FALTABA Y DEBES AÑADIR/CONFIRMAR!!!
+    fun getEventsByPlayerId(playerId: Long): Flow<List<Event>> {
+        return eventDao.getEventsByPlayerId(playerId)
     }
 
-    suspend fun deleteEvent(event: Event) {
-        eventDao.delete(event)
+    fun getEventsByDate(date: LocalDate): Flow<List<Event>> {
+        return eventDao.getEventsByDate(date)
+    }
+
+    fun updateEvent(event: Event) {
+        viewModelScope.launch {
+            eventDao.update(event)
+        }
+    }
+
+    fun deleteEvent(event: Event) {
+        viewModelScope.launch {
+            eventDao.delete(event)
+        }
     }
 }
 
+// Tu EventViewModelFactory está bien, no necesita cambios
 class EventViewModelFactory(private val eventDao: EventDao) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EventViewModel::class.java)) {

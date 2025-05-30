@@ -1,17 +1,21 @@
 package com.example.baskstatsapp
 
+import android.content.Context
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxSize // <-- ¡Asegúrate de esta importación!
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel // Importa esto
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,71 +25,99 @@ import androidx.room.Room
 import com.example.baskstatsapp.data.BaskStatsDatabase
 import com.example.baskstatsapp.dao.EventDao
 import com.example.baskstatsapp.dao.PerformanceSheetDao
+import com.example.baskstatsapp.dao.PlayerDao
 import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
-import com.example.baskstatsapp.viewmodel.EventViewModel // Importa el EventViewModel
-import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel // Importa el PerformanceSheetViewModel
+import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
+import com.example.baskstatsapp.viewmodel.PlayerViewModel
 
 class MainActivity : ComponentActivity() {
 
-    // Inicializar la base de datos y los DAOs en un lazy (se inicializa la primera vez que se accede)
-    // Usamos `application` para el context, que es más seguro que `this` de la Activity
-    private val database: BaskStatsDatabase by lazy {
-        Room.databaseBuilder(
-            application, // Usa application context
-            BaskStatsDatabase::class.java,
-            "baskstats_db"
-        )
-            .fallbackToDestructiveMigration() // Importante para desarrollo: si cambias la base de datos, la reconstruye. En producción, harías migraciones.
-            .build()
+    companion object {
+        var currentLoggedInPlayerId: Long? = null
     }
 
-    // Los DAOs se obtienen de la instancia de la base de datos
+    private val database: BaskStatsDatabase by lazy {
+        Room.databaseBuilder(
+            application,
+            BaskStatsDatabase::class.java,
+            "baskstats_db"
+        ).fallbackToDestructiveMigration().build()
+    }
+
     private val eventDao: EventDao by lazy { database.eventDao() }
     private val performanceSheetDao: PerformanceSheetDao by lazy { database.performanceSheetDao() }
+    private val playerDao: PlayerDao by lazy { database.playerDao() }
 
+    @RequiresApi(Build.VERSION_CODES.O) // Mantén esta anotación aquí
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val sharedPrefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        currentLoggedInPlayerId = sharedPrefs.getLong("logged_in_player_id", -1L).takeIf { it != -1L }
 
         setContent {
             BaskStatsAppTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize(), // <-- 'fillMaxSize' debería funcionar con la importación
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
 
+                    val playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModelFactory(playerDao))
+                    val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
+                    val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
+
                     NavHost(
                         navController = navController,
-                        startDestination = "login_screen"
+                        startDestination = if (currentLoggedInPlayerId != null) "home_screen" else "login_screen"
                     ) {
                         composable("login_screen") {
-                            LoginScreen(navController = navController)
+                            LoginScreen(
+                                navController = navController,
+                                playerViewModel = playerViewModel,
+                                onLoginSuccess = { playerId ->
+                                    sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
+                                    currentLoggedInPlayerId = playerId
+                                    navController.navigate("home_screen") {
+                                        popUpTo("login_screen") { inclusive = true }
+                                    }
+                                }
+                            )
                         }
                         composable("registration_screen") {
-                            RegistrationScreen(navController = navController)
+                            RegistrationScreen(
+                                navController = navController,
+                                playerViewModel = playerViewModel,
+                                onRegistrationSuccess = { playerId ->
+                                    sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
+                                    currentLoggedInPlayerId = playerId
+                                    navController.navigate("home_screen") {
+                                        popUpTo("registration_screen") { inclusive = true }
+                                        popUpTo("login_screen") { inclusive = true }
+                                    }
+                                }
+                            )
                         }
+                        // --- ¡QUITADA LA ANOTACIÓN @RequiresApi DE ESTOS BLOQUES 'composable'! ---
                         composable("home_screen") {
-                            // Obtener instancias de los ViewModels
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
                             HomeScreen(
                                 navController = navController,
                                 eventViewModel = eventViewModel,
-                                performanceSheetViewModel = performanceSheetViewModel
+                                performanceSheetViewModel = performanceSheetViewModel,
                             )
                         }
                         composable("events_screen") {
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
-                            EventsScreen(navController = navController, eventViewModel = eventViewModel)
+                            EventsScreen(
+                                navController = navController,
+                                eventViewModel = eventViewModel
+                            )
                         }
                         composable(
                             route = "event_detail_screen/{eventId}",
                             arguments = listOf(navArgument("eventId") { type = NavType.LongType })
                         ) { backStackEntry ->
-                            val eventId = backStackEntry.arguments?.getLong("eventId")
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
-                            // performanceSheetViewModel también podría ser útil aquí si se muestran stats del evento
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
+                            val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1L
                             EventDetailScreen(
                                 navController = navController,
                                 eventId = eventId,
@@ -94,15 +126,16 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable("performance_sheets_screen") {
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
-                            PerformanceSheetsScreen(navController = navController, performanceSheetViewModel = performanceSheetViewModel)
+                            PerformanceSheetsScreen(
+                                navController = navController,
+                                performanceSheetViewModel = performanceSheetViewModel
+                            )
                         }
                         composable(
                             route = "performance_sheet_detail_screen/{sheetId}",
                             arguments = listOf(navArgument("sheetId") { type = NavType.LongType })
                         ) { backStackEntry ->
                             val sheetId = backStackEntry.arguments?.getLong("sheetId")
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
                             PerformanceSheetDetailScreen(
                                 navController = navController,
                                 sheetId = sheetId,
@@ -111,18 +144,22 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("add_event_screen") {
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao)) // <-- Asegúrate de que lo creas aquí
+                            AddEventScreen(
+                                navController = navController,
+                                eventViewModel = eventViewModel,
+                                performanceSheetViewModel = performanceSheetViewModel
+                            )
                         }
-                        composable("add_performance_sheet_screen/{eventId}") { backStackEntry ->
+                        composable(
+                            route = "add_performance_sheet_screen/{eventId}",
+                            arguments = listOf(navArgument("eventId") { type = NavType.LongType })
+                        ) { backStackEntry ->
                             val eventId = backStackEntry.arguments?.getLong("eventId")
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
                             AddPerformanceSheetScreen(
                                 navController = navController,
-                                eventId = eventId,
                                 performanceSheetViewModel = performanceSheetViewModel,
-                                eventViewModel = eventViewModel
+                                eventViewModel = eventViewModel,
+                                eventId = eventId
                             )
                         }
                         composable(
@@ -130,8 +167,6 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(navArgument("sheetId") { type = NavType.LongType })
                         ) { backStackEntry ->
                             val sheetId = backStackEntry.arguments?.getLong("sheetId")
-                            val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
-                            val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
                             EditPerformanceSheetScreen(
                                 navController = navController,
                                 sheetId = sheetId,
@@ -146,8 +181,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Factoría para crear EventViewModel con el DAO
-class EventViewModelFactory(private val eventDao: EventDao) : androidx.lifecycle.ViewModelProvider.Factory {
+class EventViewModelFactory(private val eventDao: EventDao) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EventViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
@@ -157,8 +191,7 @@ class EventViewModelFactory(private val eventDao: EventDao) : androidx.lifecycle
     }
 }
 
-// Factoría para crear PerformanceSheetViewModel con el DAO
-class PerformanceSheetViewModelFactory(private val performanceSheetDao: PerformanceSheetDao) : androidx.lifecycle.ViewModelProvider.Factory {
+class PerformanceSheetViewModelFactory(private val performanceSheetDao: PerformanceSheetDao) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PerformanceSheetViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
@@ -168,19 +201,12 @@ class PerformanceSheetViewModelFactory(private val performanceSheetDao: Performa
     }
 }
 
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BaskStatsAppTheme {
-        Greeting("Android")
+class PlayerViewModelFactory(private val playerDao: PlayerDao) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PlayerViewModel(playerDao) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

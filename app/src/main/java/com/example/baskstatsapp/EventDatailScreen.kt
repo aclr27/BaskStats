@@ -1,150 +1,78 @@
 package com.example.baskstatsapp
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit // <-- Nueva importación
+import androidx.compose.material.icons.filled.Delete // <-- Nueva importación
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf // <-- Nueva importación
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue // <-- Nueva importación
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.EventType
-// ¡CAMBIO IMPORTANTE AQUÍ! Usamos PerformanceSheet, no PlayerStats
 import com.example.baskstatsapp.model.PerformanceSheet
-import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.time.LocalDate // Importa LocalDate si no está ya
+import java.time.LocalDateTime
+import java.time.LocalDate
+import kotlinx.coroutines.flow.flowOf // Para el preview
+import kotlinx.coroutines.launch // <-- Nueva importación
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventDetailScreen(
     navController: NavController,
-    eventId: Long?,
+    eventId: Long, // El ID del evento se pasa como argumento de navegación
     eventViewModel: EventViewModel,
     performanceSheetViewModel: PerformanceSheetViewModel
 ) {
+    // Observa el evento específico por su ID
+    val event by eventViewModel.getEventById(eventId).collectAsState(initial = null)
 
-    // -----------------------------------------------------------------
-    // Datos de prueba (Mock Data) para un solo evento
-    // Los IDs de Evento y PerformanceSheet deben ser Long, no String.
-    // También, PlayerStats se cambia por PerformanceSheet.
-    // -----------------------------------------------------------------
-    val dummyEventsData = remember {
-        listOf(
-            Pair(
-                Event(
-                    id = 1L, // ID de tipo Long
-                    type = EventType.MATCH,
-                    dateTime = LocalDateTime.of(2023, 11, 10, 18, 0),
-                    opponent = "Rival B",
-                    teamScore = 90,
-                    opponentScore = 85,
-                    notes = "Partido de liga muy intenso"
-                ),
-                PerformanceSheet( // ¡Usamos PerformanceSheet!
-                    id = 101L, // ID de la ficha de rendimiento
-                    date = LocalDate.of(2023, 11, 10), // Fecha del evento (LocalDate)
-                    playerId = "player1",
-                    eventId = 1L, // Coincide con el ID del Evento
-                    points = 25,
-                    assists = 8,
-                    rebounds = 5, // Asegúrate de que tu PerformanceSheet tenga este campo
-                    offensiveRebounds = 1,
-                    defensiveRebounds = 4,
-                    steals = 2,
-                    blocks = 1,
-                    turnovers = 3,
-                    fouls = 2,
-                    twoPointersMade = 7,
-                    twoPointersAttempted = 12,
-                    threePointersMade = 3,
-                    threePointersAttempted = 6,
-                    freeThrowsMade = 2,
-                    freeThrowsAttempted = 2,
-                    minutesPlayed = 30,
-                    plusMinus = 15
-                )
-            ),
-            Pair(
-                Event(
-                    id = 2L, // ID de tipo Long
-                    type = EventType.TRAINING,
-                    dateTime = LocalDateTime.of(2023, 11, 8, 19, 0),
-                    notes = "Entrenamiento de tiro y técnica individual, con énfasis en los tiros libres."
-                ),
-                PerformanceSheet( // ¡Usamos PerformanceSheet!
-                    id = 102L,
-                    date = LocalDate.of(2023, 11, 8),
-                    playerId = "player1",
-                    eventId = 2L,
-                    points = 15,
-                    assists = 3,
-                    rebounds = 2,
-                    offensiveRebounds = 0,
-                    defensiveRebounds = 2,
-                    steals = 0,
-                    blocks = 0,
-                    turnovers = 1,
-                    fouls = 0,
-                    twoPointersMade = 5,
-                    twoPointersAttempted = 10,
-                    threePointersMade = 1,
-                    threePointersAttempted = 5,
-                    freeThrowsMade = 2,
-                    freeThrowsAttempted = 2,
-                    minutesPlayed = 60,
-                    plusMinus = 0
-                )
-            ),
-            // ... (Añadir más eventos si quieres que el preview muestre otros IDs válidos)
-        )
-    }
+    // Observa las fichas de rendimiento asociadas a este evento
+    val performanceSheets by performanceSheetViewModel.getPerformanceSheetsForEvent(eventId).collectAsState(initial = emptyList())
 
-    // Buscar el evento y sus estadísticas por el eventId
-    // Ahora, eventId es Long?, y los IDs en dummyEventsData.first.id también son Long
-    val (event, playerStats) = remember(eventId) {
-        if (eventId == null) {
-            // Manejar el caso de ID nulo: puedes devolver un Evento/PerformanceSheet de error
-            // o simplemente un valor nulo para que la UI muestre un mensaje.
-            // Para evitar problemas de nullabilidad en el resto del Composable,
-            // devolvemos un objeto de "error" con valores por defecto.
-            Pair(
-                Event(id = -1L, type = EventType.TRAINING, dateTime = LocalDateTime.now(), notes = "Evento no encontrado"),
-                PerformanceSheet(id = -1L, date = LocalDate.now(), playerId = "error", eventId = -1L, points = 0, assists = 0, rebounds = 0, steals = 0, blocks = 0)
-            )
-        } else {
-            dummyEventsData.firstOrNull { it.first.id == eventId } ?: Pair(
-                Event(id = -1L, type = EventType.TRAINING, dateTime = LocalDateTime.now(), notes = "Evento no encontrado"),
-                PerformanceSheet(id = -1L, date = LocalDate.now(), playerId = "error", eventId = -1L, points = 0, assists = 0, rebounds = 0, steals = 0, blocks = 0)
-            )
-        }
-    }
-
+    // Estado para mostrar el diálogo de confirmación de borrado
+    var showDeleteConfirmationDialog by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope() // Para lanzar corrutinas de eliminación
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        text = if (event.type == EventType.MATCH) "Detalle del Partido" else "Detalle del Entrenamiento",
+                        text = event?.let {
+                            when (it.type) {
+                                EventType.MATCH -> "Partido"
+                                EventType.TRAINING -> "Entrenamiento"
+                                EventType.OTHER -> "Evento"
+                            }
+                        } ?: "Detalles del Evento", // Título por defecto si el evento es nulo
                         color = DarkText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
@@ -164,151 +92,232 @@ fun EventDetailScreen(
                 )
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { navController.navigate("add_performance_sheet_screen/$eventId") }, // Asegúrate de que esta ruta es correcta
+                containerColor = PrimaryOrange,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Filled.Add, "Añadir ficha de rendimiento")
+            }
+        },
         content = { paddingValues ->
-            // Si el ID es -1L, significa que no se encontró el evento. Podrías mostrar un mensaje de error.
-            if (event.id == -1L) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Error: Evento no encontrado.", color = MaterialTheme.colorScheme.error)
-                }
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                        .background(LightGrayBackground)
-                        .verticalScroll(rememberScrollState()) // Habilita el scroll si el contenido es largo
-                        .padding(16.dp)
-                ) {
-                    // Sección de Información General del Evento
-                    Card(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(LightGrayBackground)
+                    .padding(16.dp)
+            ) {
+                // Mostrar detalles del evento
+                event?.let { currentEvent ->
+                    EventDetailsCard(currentEvent)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // --- ¡AÑADIDA SECCIÓN DE BOTONES DE ACCIÓN PARA EL EVENTO! ---
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = event.dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm")),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = DarkText.copy(alpha = 0.7f)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            if (event.type == EventType.MATCH) {
-                                Text(
-                                    text = "vs ${event.opponent}",
-                                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = DarkText
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Resultado: ${event.teamScore} - ${event.opponentScore}",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = PrimaryOrange
-                                )
-                            } else {
-                                Text(
-                                    text = "Entrenamiento",
-                                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = DarkText
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            if (event.notes != null && event.notes.isNotBlank()) {
-                                Text(
-                                    text = "Notas: ${event.notes}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = DarkText.copy(alpha = 0.8f)
-                                )
+                        Button(
+                            onClick = {
+                                navController.navigate("edit_event_screen/${currentEvent.id}")
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = "Editar Evento", tint = Color.White)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Editar", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Button(
+                            onClick = { showDeleteConfirmationDialog = true }, // Muestra el diálogo de confirmación
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error), // Color de error para borrar
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Eliminar Evento", tint = Color.White)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Eliminar", color = Color.White)
+                        }
+                    }
+                    // --- FIN SECCIÓN DE BOTONES DE ACCIÓN PARA EL EVENTO ---
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = Color(0xFFEEEEEE), thickness = 2.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Fichas de Rendimiento:",
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                        color = DarkText,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Lista de fichas de rendimiento
+                    if (performanceSheets.isEmpty()) {
+                        Text(
+                            text = "No hay fichas de rendimiento para este evento. Pulsa '+' para añadir una.",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DarkText.copy(alpha = 0.7f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(performanceSheets) { sheet ->
+                                PerformanceSheetSummaryCard(sheet) {
+                                    // Navegar al detalle de la ficha de rendimiento
+                                    navController.navigate("performance_sheet_detail_screen/${sheet.id}")
+                                }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Sección de Estadísticas Individuales del Jugador
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "Tus Estadísticas",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = DarkText
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Fila 1 de Estadísticas
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                StatItem("Puntos", playerStats.points)
-                                StatItem("Asist.", playerStats.assists)
-                                StatItem("Reb. Total", playerStats.rebounds) // Asegúrate de que PerformanceSheet tiene 'rebounds'
+                    // --- DIÁLOGO DE CONFIRMACIÓN DE ELIMINACIÓN DE EVENTO ---
+                    if (showDeleteConfirmationDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteConfirmationDialog = false },
+                            title = { Text("Confirmar Eliminación") },
+                            text = { Text("¿Estás seguro de que quieres eliminar este evento? También se eliminarán todas las fichas de rendimiento asociadas a él.") },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = {
+                                        coroutineScope.launch {
+                                            eventViewModel.deleteEvent(currentEvent)
+                                            showDeleteConfirmationDialog = false
+                                            navController.popBackStack() // Volver a la pantalla anterior (EventsScreen o HomeScreen)
+                                        }
+                                    }
+                                ) {
+                                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDeleteConfirmationDialog = false }) {
+                                    Text("Cancelar")
+                                }
                             }
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Fila 2 de Estadísticas
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                StatItem("Reb. Ofen.", playerStats.offensiveRebounds)
-                                StatItem("Reb. Def.", playerStats.defensiveRebounds)
-                                StatItem("Robos", playerStats.steals)
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Fila 3 de Estadísticas
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                StatItem("Bloq.", playerStats.blocks)
-                                StatItem("Pérd.", playerStats.turnovers)
-                                StatItem("Faltas", playerStats.fouls)
-                            }
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Fila de Lanzamientos
-                            Divider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 8.dp))
-                            Text(
-                                text = "Lanzamientos:",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = DarkText.copy(alpha = 0.9f)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            // Asegúrate de que no intentas dividir por cero
-                            StatRow("T2:", "${playerStats.twoPointersMade}/${playerStats.twoPointersAttempted}", "${(playerStats.twoPointersMade.toFloat() / if (playerStats.twoPointersAttempted > 0) playerStats.twoPointersAttempted else 1 * 100).toInt()}%")
-                            StatRow("T3:", "${playerStats.threePointersMade}/${playerStats.threePointersAttempted}", "${(playerStats.threePointersMade.toFloat() / if (playerStats.threePointersAttempted > 0) playerStats.threePointersAttempted else 1 * 100).toInt()}%")
-                            StatRow("TL:", "${playerStats.freeThrowsMade}/${playerStats.freeThrowsAttempted}", "${(playerStats.freeThrowsMade.toFloat() / if (playerStats.freeThrowsAttempted > 0) playerStats.freeThrowsAttempted else 1 * 100).toInt()}%")
-
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Divider(color = Color(0xFFEEEEEE), modifier = Modifier.padding(vertical = 8.dp))
-
-                            // Otras estadísticas
-                            StatRow("Minutos Jugados:", "${playerStats.minutesPlayed} min")
-                            StatRow("Plus/Minus:", "${playerStats.plusMinus}")
-                        }
+                        )
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                    // --- FIN DIÁLOGO DE CONFIRMACIÓN ---
+
+                } ?: run {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Evento no encontrado.",
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = DarkText.copy(alpha = 0.7f),
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
                 }
             }
         }
     )
 }
 
-
-@Preview(showBackground = true, widthDp = 360)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PreviewEventDetailScreen() {
-    BaskStatsAppTheme {
-        // Pasa un ID de evento de prueba (debe ser un Long, como 1L o 2L)
-        // para que el preview pueda cargar un evento existente.
-        EventDetailScreen(navController = rememberNavController(), eventId = 1L)
+fun EventDetailsCard(event: Event) {
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") } // Formato corregido
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = event.type.displayName(),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryOrange
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Fecha y Hora: ${event.dateTime.format(dateFormatter)}",
+                style = MaterialTheme.typography.bodyLarge,
+                color = DarkText
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+
+            if (event.type == EventType.MATCH) {
+                event.opponent?.let {
+                    Text(
+                        text = "Rival: $it",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = DarkText
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+                if (event.teamScore != null && event.opponentScore != null) {
+                    Text(
+                        text = "Resultado: ${event.teamScore} - ${event.opponentScore}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DarkText
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
+            }
+            event.notes?.let {
+                if (it.isNotBlank()) {
+                    Text(
+                        text = "Notas: $it",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DarkText.copy(alpha = 0.7f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+
+// Card de resumen de ficha de rendimiento (puede ser similar a EventCard pero mostrando stats clave)
+// Asegúrate de que esta función está disponible, si la tienes en PermormanceSheetsScreen.kt, puedes reutilizarla.
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun PerformanceSheetSummaryCard(sheet: PerformanceSheet, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Ficha de Rendimiento: ${sheet.date.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))}", // Formato corregido
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryOrange
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Puntos: ${sheet.points} | Asistencias: ${sheet.assists} | Rebotes: ${sheet.rebounds}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = DarkText
+            )
+            Text(
+                text = "Robos: ${sheet.steals} | Tapones: ${sheet.blocks} | Pérdidas: ${sheet.turnovers}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = DarkText
+            )
+            // Puedes añadir más estadísticas clave aquí
+        }
     }
 }
