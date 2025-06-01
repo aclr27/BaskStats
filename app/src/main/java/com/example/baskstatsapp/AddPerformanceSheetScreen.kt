@@ -36,9 +36,11 @@ fun AddPerformanceSheetScreen(
     playerViewModel: PlayerViewModel,
     associatedEventId: Long? = null // Este parámetro ya estaba aquí, lo mantengo.
 ) {
-    val loggedInPlayerId = MainActivity.currentLoggedInPlayerId
+    // El ID del jugador logueado ya se establece en el EventViewModel desde MainActivity.
+    // Ahora observamos el 'playerEvents' StateFlow del EventViewModel.
+    val availableEvents by eventViewModel.playerEvents.collectAsState(initial = emptyList()) // <-- ¡CORREGIDO AQUÍ!
 
-    val availableEvents by eventViewModel.getEventsByPlayerId(loggedInPlayerId ?: -1L).collectAsState(initial = emptyList())
+    val loggedInPlayerId = MainActivity.currentLoggedInPlayerId // Todavía necesario para asignar a la ficha
 
     PerformanceSheetForm(
         initialPerformanceSheet = null,

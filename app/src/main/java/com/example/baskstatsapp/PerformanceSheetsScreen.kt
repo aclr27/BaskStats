@@ -35,6 +35,8 @@ import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import java.time.format.DateTimeFormatter
 import java.time.LocalDate
+import java.time.Instant // Importar Instant
+import java.time.ZoneId // Importar ZoneId
 import kotlinx.coroutines.flow.flowOf
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -111,9 +113,8 @@ fun PerformanceSheetsScreen(
                     ) {
                         items(performanceSheets) { sheet ->
                             PerformanceSheetCard(sheet = sheet) {
-                                // Navegar a la pantalla de detalle de la ficha
-                                // Necesitarás implementar PerformanceSheetDetailScreen.kt
-                                navController.navigate("performance_sheet_detail_screen/${sheet.id}")
+                                // CORRECCIÓN: Usar sheet.sheetId en lugar de sheet.id
+                                navController.navigate("performance_sheet_detail_screen/${sheet.sheetId}")
                             }
                         }
                     }
@@ -128,7 +129,15 @@ fun PerformanceSheetsScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PerformanceSheetCard(sheet: PerformanceSheet, onClick: () -> Unit) {
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy") } // Solo fecha
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy") } // Formato de fecha
+
+    // CORRECCIÓN: Convertir sheet.eventDate (Long) a LocalDate para formatear
+    val sheetLocalDate = remember(sheet.eventDate) {
+        Instant.ofEpochMilli(sheet.eventDate)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -139,8 +148,9 @@ fun PerformanceSheetCard(sheet: PerformanceSheet, onClick: () -> Unit) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // CORRECCIÓN: Usar sheetLocalDate formateado
             Text(
-                text = "Ficha del ${sheet.date.format(dateFormatter)}",
+                text = "Ficha del ${sheetLocalDate.format(dateFormatter)}",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryOrange
@@ -160,4 +170,3 @@ fun PerformanceSheetCard(sheet: PerformanceSheet, onClick: () -> Unit) {
         }
     }
 }
-

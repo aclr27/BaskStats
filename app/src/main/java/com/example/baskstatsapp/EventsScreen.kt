@@ -15,7 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember // Required for remember to ensure flow creation is stable
+import androidx.compose.runtime.remember // Necesario para remember para asegurar que la creación del flow sea estable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +33,7 @@ import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import com.example.baskstatsapp.viewmodel.EventViewModel
-import kotlinx.coroutines.flow.flowOf // Required for flowOf
+import kotlinx.coroutines.flow.flowOf // Necesario para flowOf
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -46,18 +46,9 @@ fun EventsScreen(
     navController: NavController,
     eventViewModel: EventViewModel
 ) {
-    // Manejo de la obtención de eventos basado en el jugador loggeado
-    // Usa remember para crear el flujo solo cuando loggedInPlayerId cambia
-    val eventsFlow = remember(MainActivity.currentLoggedInPlayerId) {
-        val playerId = MainActivity.currentLoggedInPlayerId
-        if (playerId != null) {
-            eventViewModel.getEventsByPlayerId(playerId)
-        } else {
-            flowOf(emptyList())
-        }
-    }
-    // Collect the events from the flow
-    val events by eventsFlow.collectAsState(initial = emptyList())
+    // CORRECCIÓN: Directamente observa playerEvents del ViewModel
+    // Este Flow ya se encarga de filtrar por el jugador logueado (establecido en MainActivity)
+    val events by eventViewModel.playerEvents.collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
@@ -99,9 +90,9 @@ fun EventsScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
                     .background(LightGrayBackground)
-                    .padding(horizontal = 16.dp) // Adjusted padding for better consistency
+                    .padding(horizontal = 16.dp) // Relleno ajustado para una mejor consistencia
             ) {
-                // Corrected: events.isEmpty() should now resolve correctly
+                // CORRECCIÓN: events.isEmpty() ahora se resolverá correctamente
                 if (events.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -117,14 +108,17 @@ fun EventsScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp), // Added vertical padding
+                        contentPadding = PaddingValues(vertical = 8.dp), // Relleno vertical añadido
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Corrected: items(list) instead of items(list.size)
-                        items(events) { eventItem -> // 'eventItem' here is directly an Event object
+                        // CORRECCIÓN: items(list) en lugar de items(list.size)
+                        items(events) { eventItem -> // 'eventItem' aquí es directamente un objeto Event
                             EventListItem(
-                                event = eventItem, // Pass the Event object
-                                onClick = { navController.navigate("event_detail_screen/${eventItem.id}") } // eventItem.id is now correctly accessible
+                                event = eventItem, // Pasa el objeto Evento
+                                onClick = { clickedEvent -> // Usa un nombre explícito para el parámetro de la lambda
+                                    // CORRECCIÓN: Usa eventId del modelo Event
+                                    navController.navigate("event_detail_screen/${clickedEvent.id}")
+                                }
                             )
                         }
                     }
@@ -136,11 +130,11 @@ fun EventsScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun EventListItem(event: Event, onClick: (Event) -> Unit) { // Changed onClick signature to take Event
+fun EventListItem(event: Event, onClick: (Event) -> Unit) { // La firma de onClick es correcta aquí
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick(event) }, // Pass the actual event object on click
+            .clickable { onClick(event) }, // Pasa el objeto evento real al hacer clic
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -154,7 +148,7 @@ fun EventListItem(event: Event, onClick: (Event) -> Unit) { // Changed onClick s
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = event.type.name.replace("_", " ").lowercase().capitalize(), // Format event type
+                    text = event.type.name.replace("_", " ").lowercase().capitalize(), // Formatea el tipo de evento
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = DarkText

@@ -14,6 +14,8 @@ data class Event(
     @PrimaryKey(autoGenerate = true)
     /** Identificador único del evento. */
     val id: Long = 0, //Importante que sea long para poder autogenerar.
+    /** Nombre descriptivo del evento (Ej: "Partido vs. Lobos", "Entrenamiento de Tiros") */
+    val eventName: String,
     /** Tipo de evento: [EventType.MATCH] para partido, [EventType.TRAINING] para entrenamiento. */
     val type: EventType,
     /** Fecha y hora exacta en la que ocurrió el evento. */
@@ -26,9 +28,8 @@ data class Event(
     val opponentScore: Int? = null,
     /** Notas o comentarios adicionales sobre el evento. */
     val notes: String? = null,
-
     val playerId: Long? // Este es el ID del jugador que añade el evento.
-)
+) {}
 
 /**
  * Define los tipos posibles de eventos de baloncesto.

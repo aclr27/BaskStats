@@ -46,6 +46,7 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.ZoneOffset // Añadido para convertir LocalDateTime a Long para PerformanceSheet
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
@@ -64,6 +65,7 @@ fun AddEventScreen(
     val coroutineScope = rememberCoroutineScope()
 
     // Estado para los campos del evento
+    var eventName by remember { mutableStateOf("") } // <-- ¡NUEVO! Para el nombre del evento
     var eventType by remember { mutableStateOf(EventType.MATCH) }
     var selectedDateTime by remember { mutableStateOf(LocalDateTime.now()) }
     var opponent by remember { mutableStateOf("") }
@@ -153,6 +155,10 @@ fun AddEventScreen(
                         }
 
                         // Validación básica del evento
+                        if (eventName.isBlank()) { // <--- Validar que el nombre del evento no esté vacío
+                            Toast.makeText(context, "El nombre del evento no puede estar vacío.", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
                         if (eventType == EventType.MATCH) {
                             if (opponent.isBlank()) {
                                 Toast.makeText(context, "El nombre del rival no puede estar vacío para un partido.", Toast.LENGTH_SHORT).show()
@@ -166,6 +172,7 @@ fun AddEventScreen(
 
                         // Crear y guardar el Evento
                         val newEvent = Event(
+                            eventName = eventName, // <-- ¡AQUÍ ESTÁ EL CAMBIO! Pasando eventName
                             type = eventType,
                             dateTime = selectedDateTime,
                             opponent = if (eventType == EventType.MATCH) opponent.takeIf { it.isNotBlank() } else null,
@@ -178,19 +185,18 @@ fun AddEventScreen(
                         val eventId = eventViewModel.insertEvent(newEvent)
 
                         if (eventId > 0L) {
-                            // Calcular el total de rebotes
-                            val totalReboundsValue = (offensiveRebounds.toIntOrNull() ?: 0) + (defensiveRebounds.toIntOrNull() ?: 0)
-
                             // Crear y guardar la PerformanceSheet
                             val performanceSheet = PerformanceSheet(
-                                date = selectedDateTime.toLocalDate(),
+                                // Los parámetros 'date' y 'rebounds' ya no existen en PerformanceSheet.
+                                // Se reemplazan por 'eventDate' (Long) y 'offensiveRebounds'/'defensiveRebounds'.
+                                sheetId = 0, // Se autogenera
                                 playerId = currentLoggedInPlayerId,
                                 eventId = eventId, // Asociar la ficha al evento recién creado
+                                eventDate = selectedDateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli(), // <-- ¡AQUÍ ESTÁ EL CAMBIO! Convertir LocalDateTime a Long (timestamp)
                                 points = points.toIntOrNull() ?: 0,
                                 assists = assists.toIntOrNull() ?: 0,
-                                rebounds = totalReboundsValue, // Se calcula aquí
-                                offensiveRebounds = offensiveRebounds.toIntOrNull() ?: 0,
-                                defensiveRebounds = defensiveRebounds.toIntOrNull() ?: 0,
+                                offensiveRebounds = offensiveRebounds.toIntOrNull() ?: 0, // <-- Uso de offensiveRebounds
+                                defensiveRebounds = defensiveRebounds.toIntOrNull() ?: 0, // <-- Uso de defensiveRebounds
                                 steals = steals.toIntOrNull() ?: 0,
                                 blocks = blocks.toIntOrNull() ?: 0,
                                 turnovers = turnovers.toIntOrNull() ?: 0,
@@ -234,6 +240,22 @@ fun AddEventScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp) // Ajuste de padding
             ) {
                 Spacer(modifier = Modifier.height(8.dp)) // Espacio superior
+
+                // --- Campo para el nombre del evento ---
+                OutlinedTextField(
+                    value = eventName,
+                    onValueChange = { eventName = it },
+                    label = { Text("Nombre del Evento") },
+                    placeholder = { Text("Ej: Partido vs. Los Leones, Entrenamiento de Tiros") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryOrange,
+                        unfocusedBorderColor = DarkText.copy(alpha = 0.5f),
+                        focusedLabelColor = PrimaryOrange,
+                        unfocusedLabelColor = DarkText.copy(alpha = 0.7f)
+                    )
+                )
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
                     text = "Tipo de Evento:",

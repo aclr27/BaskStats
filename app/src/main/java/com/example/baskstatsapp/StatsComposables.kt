@@ -26,12 +26,14 @@ import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import java.time.format.DateTimeFormatter
 
-// Este archivo contendrá Composables reutilizables para estadísticas
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import java.time.Instant // Añadir esta importación
+import java.time.ZoneId // Añadir esta importación
+
 /**
  * Fichas de rendimiento que dan más detalles del jugador
  */
@@ -42,6 +44,12 @@ fun PerformanceItemCard(performanceSheet: PerformanceSheet,
                         playerName: String,
                         modifier: Modifier = Modifier) {
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    // Corrección: Acceder a eventDate y convertirlo a LocalDate
+    val performanceLocalDate = Instant.ofEpochMilli(performanceSheet.eventDate)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -54,8 +62,9 @@ fun PerformanceItemCard(performanceSheet: PerformanceSheet,
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Corrección: Usar performanceLocalDate formateado
             Text(
-                text = "Ficha de ${playerName} - ${performanceSheet.date.format(dateFormatter)}",
+                text = "Ficha de ${playerName} - ${performanceLocalDate.format(dateFormatter)}",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = DarkText,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -69,7 +78,8 @@ fun PerformanceItemCard(performanceSheet: PerformanceSheet,
             ) {
                 StatItem("Pts", performanceSheet.points)
                 StatItem("Asis", performanceSheet.assists)
-                StatItem("Reb", performanceSheet.rebounds)
+                // Corrección: Sumar offensiveRebounds y defensiveRebounds para mostrar los rebotes totales
+                StatItem("Reb", performanceSheet.offensiveRebounds + performanceSheet.defensiveRebounds)
                 StatItem("Rob", performanceSheet.steals)
                 StatItem("Bloq", performanceSheet.blocks)
             }
@@ -186,8 +196,9 @@ fun EventItemCard(
                 fontSize = 13.sp,
                 color = DarkText
             )
+            // Corrección: Sumar offensiveRebounds y defensiveRebounds para mostrar los rebotes totales
             Text(
-                text = "Rebotes: ${playerStats?.rebounds}",
+                text = "Rebotes: ${playerStats?.let { it.offensiveRebounds + it.defensiveRebounds } ?: 0}",
                 fontSize = 13.sp,
                 color = DarkText
             )

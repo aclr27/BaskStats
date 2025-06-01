@@ -25,8 +25,8 @@ import com.example.baskstatsapp.model.Player
  * fechas.
  */
 @Database(entities = [Event::class, PerformanceSheet::class, Player::class, Goal::class],
-    version = 4,
-    exportSchema = false
+    version = 6,
+    exportSchema = true
 )
 @TypeConverters(Converters::class) // Registra tus convertidores de tipo aquí
 abstract class BaskStatsDatabase : RoomDatabase() {

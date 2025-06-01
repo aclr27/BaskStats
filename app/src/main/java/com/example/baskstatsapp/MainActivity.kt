@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect // <--- AÑADIDO
+import androidx.compose.runtime.remember // <--- AÑADIDO (si no estaba)
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -26,6 +28,7 @@ import com.example.baskstatsapp.dao.EventDao
 import com.example.baskstatsapp.dao.GoalDao
 import com.example.baskstatsapp.dao.PerformanceSheetDao
 import com.example.baskstatsapp.dao.PlayerDao
+import com.example.baskstatsapp.screens.PlayerStatsScreen
 import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.GoalViewModel
@@ -33,28 +36,11 @@ import com.example.baskstatsapp.viewmodel.GoalViewModelFactory
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import com.example.baskstatsapp.viewmodel.PlayerViewModel
 
-// Importa tus pantallas explícitamente si están en subpaquetes
-import com.example.baskstatsapp.LoginScreen
-import com.example.baskstatsapp.RegistrationScreen
-import com.example.baskstatsapp.HomeScreen
-import com.example.baskstatsapp.EventsScreen
-import com.example.baskstatsapp.EventDetailScreen
-import com.example.baskstatsapp.EditEventScreen
-import com.example.baskstatsapp.PerformanceSheetsScreen
-import com.example.baskstatsapp.PerformanceSheetDetailScreen
-import com.example.baskstatsapp.AddEventScreen
-import com.example.baskstatsapp.AddPerformanceSheetScreen
-import com.example.baskstatsapp.EditPerformanceSheetScreen
-import com.example.baskstatsapp.PlayerStatsScreen
-import com.example.baskstatsapp.GoalsScreen
-import com.example.baskstatsapp.AddGoalScreen
-import com.example.baskstatsapp.EditGoalScreen
-
-
 class MainActivity : ComponentActivity() {
 
     companion object {
         var currentLoggedInPlayerId: Long? = null
+        // Ya no necesitamos un setLoggedInPlayerId aquí, se gestiona con sharedPrefs y LaunchedEffect
     }
 
     private val database: BaskStatsDatabase by lazy {
@@ -90,6 +76,17 @@ class MainActivity : ComponentActivity() {
                     val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
                     val goalViewModel: GoalViewModel = viewModel(factory = GoalViewModelFactory(goalDao))
 
+                    // Este LaunchedEffect es un Composable.
+                    // Se ejecutará cuando `currentLoggedInPlayerId` cambie,
+                    // actualizando los ViewModels con el ID del jugador logueado.
+                    LaunchedEffect(currentLoggedInPlayerId) {
+                        goalViewModel.setLoggedInPlayerId(currentLoggedInPlayerId)
+                        // Asegúrate de que PerformanceSheetViewModel tenga un método setSelectedPlayerId
+                        performanceSheetViewModel.setSelectedPlayerId(currentLoggedInPlayerId)
+                        // Si EventViewModel o cualquier otro ViewModel necesita el ID del jugador, configúralo aquí también.
+                        eventViewModel.setSelectedPlayerId(currentLoggedInPlayerId)
+                    }
+
                     NavHost(
                         navController = navController,
                         startDestination = if (currentLoggedInPlayerId != null) "home_screen" else "login_screen"
@@ -100,13 +97,12 @@ class MainActivity : ComponentActivity() {
                                 playerViewModel = playerViewModel,
                                 onLoginSuccess = { playerId ->
                                     sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
-                                    currentLoggedInPlayerId = playerId
+                                    currentLoggedInPlayerId = playerId // Esto dispara el LaunchedEffect de arriba
                                     navController.navigate("home_screen") {
-                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen en este caso)
                                         popUpTo(navController.graph.startDestinationId) {
                                             inclusive = true
                                         }
-                                        launchSingleTop = true // Evita duplicados si home_screen ya estuviera en la pila
+                                        launchSingleTop = true
                                     }
                                 }
                             )
@@ -117,14 +113,12 @@ class MainActivity : ComponentActivity() {
                                 playerViewModel = playerViewModel,
                                 onRegistrationSuccess = { playerId ->
                                     sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
-                                    currentLoggedInPlayerId = playerId
+                                    currentLoggedInPlayerId = playerId // Esto dispara el LaunchedEffect de arriba
                                     navController.navigate("home_screen") {
-                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen en este caso)
-                                        // Se elimina la doble popUpTo redundante
                                         popUpTo(navController.graph.startDestinationId) {
                                             inclusive = true
                                         }
-                                        launchSingleTop = true // Evita duplicados
+                                        launchSingleTop = true
                                     }
                                 }
                             )
@@ -136,14 +130,12 @@ class MainActivity : ComponentActivity() {
                                 performanceSheetViewModel = performanceSheetViewModel,
                                 onLogout = {
                                     sharedPrefs.edit().remove("logged_in_player_id").apply()
-                                    currentLoggedInPlayerId = null
+                                    currentLoggedInPlayerId = null // Esto dispara el LaunchedEffect de arriba
                                     navController.navigate("login_screen") {
-                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen)
-                                        // Esto asegura que no queden pantallas detrás que el usuario pueda alcanzar con el botón Atrás.
                                         popUpTo(navController.graph.startDestinationId) {
                                             inclusive = true
                                         }
-                                        launchSingleTop = true // Evita crear múltiples instancias de login_screen
+                                        launchSingleTop = true
                                     }
                                 }
                             )
@@ -201,6 +193,7 @@ class MainActivity : ComponentActivity() {
                                 navController = navController,
                                 eventViewModel = eventViewModel,
                                 performanceSheetViewModel = performanceSheetViewModel
+                                // Ya no se pasa currentLoggedInPlayerId aquí, se accede directamente en AddEventScreen
                             )
                         }
                         composable(
@@ -232,18 +225,20 @@ class MainActivity : ComponentActivity() {
                                 playerViewModel = playerViewModel
                             )
                         }
-                        composable(
-                            route = "player_stats_screen/{playerId}",
-                            arguments = listOf(navArgument("playerId") { type = NavType.LongType; defaultValue = -1L })
-                        ) { backStackEntry ->
-                            val playerId = backStackEntry.arguments?.getLong("playerId") ?: -1L
+                        // La ruta para la pantalla de estadísticas que usa el PlayerId del ViewModel
+                        composable("player_stats_screen") { // <--- RUTA CORREGIDA: No necesita parámetro si usa el ID logueado
                             PlayerStatsScreen(
                                 navController = navController,
-                                playerId = playerId,
                                 performanceSheetViewModel = performanceSheetViewModel,
-                                playerViewModel = playerViewModel
+                                eventViewModel = eventViewModel // Pasamos el eventViewModel para obtener nombres de eventos
+                                // Ya no se pasa currentLoggedInPlayerId aquí directamente, el ViewModel lo obtiene.
                             )
                         }
+                        // Puedes eliminar la ruta "player_stats_screen/{playerId}" si no la necesitas para otros jugadores:
+                        // Si la necesitas para ver estadísticas de OTROS jugadores, necesitarías otra PlayerStatsScreen
+                        // que acepte el ID y se lo pase a un ViewModel o DAO. Por ahora, asumimos que esta pantalla
+                        // es para el jugador logueado.
+
                         composable("goals_screen") { // Ruta para la lista de objetivos
                             GoalsScreen(
                                 navController = navController,
@@ -253,7 +248,8 @@ class MainActivity : ComponentActivity() {
                         composable("add_goal_screen") { // Ruta para añadir un nuevo objetivo
                             AddGoalScreen(
                                 navController = navController,
-                                goalViewModel = goalViewModel // Pasa el ViewModel
+                                goalViewModel = goalViewModel, // Pasa el ViewModel
+                                currentLoggedInPlayerId = currentLoggedInPlayerId // Pasa el ID del jugador para el Goal
                             )
                         }
                         composable(
@@ -264,7 +260,16 @@ class MainActivity : ComponentActivity() {
                             EditGoalScreen(
                                 navController = navController,
                                 goalViewModel = goalViewModel, // Pasa el ViewModel
-                                goalId = goalId // Pasa el ID del objetivo a editar
+                                goalId = goalId, // Pasa el ID del objetivo a editar
+                                currentLoggedInPlayerId = currentLoggedInPlayerId // Pasa el ID del jugador para el Goal
+                            )
+                        }
+
+                        composable("player_stats_screen") {
+                            PlayerStatsScreen(
+                                navController = navController,
+                                eventViewModel = eventViewModel,
+                                performanceSheetViewModel = performanceSheetViewModel
                             )
                         }
                     }

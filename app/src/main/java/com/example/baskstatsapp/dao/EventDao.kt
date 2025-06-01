@@ -34,5 +34,4 @@ interface EventDao {
     @Query("SELECT * FROM events WHERE DATE(dateTime) = :date ORDER BY dateTime DESC")
     fun getEventsByDate(date: LocalDate): Flow<List<Event>>
 
-    // Eliminamos 'getEventsForPlayer' ya que 'getEventsByPlayerId' hace lo mismo y es coherente con el nombre del campo.
 }

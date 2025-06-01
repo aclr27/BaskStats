@@ -16,20 +16,27 @@ interface PerformanceSheetDao {
     @Delete
     suspend fun delete(sheet: PerformanceSheet)
 
-    @Query("SELECT * FROM performance_sheets ORDER BY date DESC")
+    // Asegúrate de que 'eventDate' es el nombre de la columna en tu modelo PerformanceSheet
+    @Query("SELECT * FROM performance_sheets ORDER BY eventDate DESC")
     fun getAllPerformanceSheets(): Flow<List<PerformanceSheet>>
 
-    @Query("SELECT * FROM performance_sheets WHERE id = :sheetId")
+    // Asegúrate de que 'sheetId' es el nombre de la columna de ID en tu modelo PerformanceSheet
+    @Query("SELECT * FROM performance_sheets WHERE sheetId = :sheetId")
     fun getPerformanceSheetById(sheetId: Long): Flow<PerformanceSheet?>
 
-    @Query("SELECT * FROM performance_sheets WHERE eventId = :eventId ORDER BY date DESC")
+    @Query("SELECT * FROM performance_sheets WHERE eventId = :eventId ORDER BY eventDate DESC")
     fun getPerformanceSheetsForEvent(eventId: Long): Flow<List<PerformanceSheet>>
 
-    @Query("SELECT * FROM performance_sheets WHERE playerId = :playerId ORDER BY date DESC")
+    @Query("SELECT * FROM performance_sheets WHERE playerId = :playerId ORDER BY eventDate DESC")
     fun getPerformanceSheetsForPlayer(playerId: Long): Flow<List<PerformanceSheet>>
 
     @Query("SELECT * FROM performance_sheets WHERE playerId = :playerId AND eventId = :eventId")
     fun getPerformanceSheetForEventAndPlayer(playerId: Long, eventId: Long): Flow<PerformanceSheet?>
+
+    // Método para obtener las últimas N fichas de rendimiento de un jugador
+    @Query("SELECT * FROM performance_sheets WHERE playerId = :playerId ORDER BY eventDate DESC LIMIT :limit")
+    fun getLastNPerformanceSheetsForPlayer(playerId: Long, limit: Int): Flow<List<PerformanceSheet>>
+
 
     // --- CONSULTAS PARA ESTADÍSTICAS GLOBALES ---
 
@@ -42,7 +49,7 @@ interface PerformanceSheetDao {
     @Query("SELECT SUM(assists) FROM performance_sheets WHERE playerId = :playerId")
     fun getTotalAssists(playerId: Long): Flow<Int?>
 
-    @Query("SELECT SUM(rebounds) FROM performance_sheets WHERE playerId = :playerId")
+    @Query("SELECT SUM(defensiveRebounds + offensiveRebounds) FROM performance_sheets WHERE playerId = :playerId")
     fun getTotalRebounds(playerId: Long): Flow<Int?>
 
     @Query("SELECT SUM(steals) FROM performance_sheets WHERE playerId = :playerId")
@@ -60,7 +67,7 @@ interface PerformanceSheetDao {
     @Query("SELECT AVG(assists) FROM performance_sheets WHERE playerId = :playerId")
     fun getAvgAssists(playerId: Long): Flow<Double?>
 
-    @Query("SELECT AVG(rebounds) FROM performance_sheets WHERE playerId = :playerId")
+    @Query("SELECT AVG(defensiveRebounds + offensiveRebounds) FROM performance_sheets WHERE playerId = :playerId")
     fun getAvgRebounds(playerId: Long): Flow<Double?>
 
     @Query("SELECT AVG(steals) FROM performance_sheets WHERE playerId = :playerId")
@@ -99,19 +106,17 @@ interface PerformanceSheetDao {
     @Query("SELECT SUM(plusMinus) FROM performance_sheets WHERE playerId = :playerId")
     fun getTotalPlusMinus(playerId: Long): Flow<Int?>
 
-    // Porcentaje de tiros de 2 (VERSION CORREGIDA)
     @Query("""
         SELECT
             CASE
                 WHEN SUM(twoPointersAttempted) > 0 THEN CAST(SUM(twoPointersMade) AS REAL) * 100 / SUM(twoPointersAttempted)
-                ELSE 0.0 -- O NULL, dependiendo de cómo quieras manejarlo cuando no hay intentos
+                ELSE 0.0
             END
         FROM performance_sheets
         WHERE playerId = :playerId
     """)
     fun getTwoPointersPercentage(playerId: Long): Flow<Double?>
 
-    // Porcentaje de tiros de 3 (VERSION CORREGIDA)
     @Query("""
         SELECT
             CASE
@@ -123,7 +128,6 @@ interface PerformanceSheetDao {
     """)
     fun getThreePointersPercentage(playerId: Long): Flow<Double?>
 
-    // Porcentaje de tiros libres (VERSION CORREGIDA)
     @Query("""
         SELECT
             CASE

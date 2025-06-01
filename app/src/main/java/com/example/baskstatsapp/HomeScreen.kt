@@ -18,7 +18,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.TrackChanges // <--- NUEVA IMPORTACIÓN PARA EL ICONO DE OBJETIVOS
+import androidx.compose.material.icons.filled.TrackChanges
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,12 +45,6 @@ import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
-// Asegúrate de que estas importaciones son correctas para tus composables de tarjetas
-// Si EventItemCard y PerformanceItemCard están en el mismo paquete, no necesitarán importación explícita
-// Si están en un subpaquete, por ejemplo, 'composables', las importaciones serían así:
-// import com.example.baskstatsapp.composables.EventItemCard // <--- Ejemplo
-// import com.example.baskstatsapp.composables.PerformanceItemCard // <--- Ejemplo
-
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,22 +52,16 @@ fun HomeScreen(
     navController: NavController,
     eventViewModel: EventViewModel,
     performanceSheetViewModel: PerformanceSheetViewModel,
-    onLogout: () -> Unit // Callback para cerrar sesión
+    onLogout: () -> Unit
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Obtener el ID del jugador logueado desde MainActivity (temporal para este ejemplo)
-    // Una implementación más robusta usaría un ViewModel compartido o DataStore
     val currentLoggedInPlayerId = MainActivity.currentLoggedInPlayerId
 
-    // Observar los eventos y fichas de rendimiento del jugador logueado
-    // Nota: Necesitarás implementar estos métodos en tus ViewModels para filtrar por playerId
-    val playerEvents by eventViewModel.getEventsForPlayer(currentLoggedInPlayerId ?: -1L)
-        .collectAsState(initial = emptyList())
+    val playerEvents by eventViewModel.playerEvents.collectAsState(initial = emptyList())
+    val playerPerformanceSheets by performanceSheetViewModel.allPerformanceSheets.collectAsState(initial = emptyList())
 
-    val playerPerformanceSheets by performanceSheetViewModel.getPerformanceSheetsForPlayer(currentLoggedInPlayerId ?: -1L)
-        .collectAsState(initial = emptyList())
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -166,48 +154,63 @@ fun HomeScreen(
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
 
-                // --- NUEVO ITEM PARA "ESTABLECER OBJETIVOS" ---
                 NavigationDrawerItem(
                     label = { Text("Establecer Objetivos") },
-                    // Usamos startsWith para manejar rutas con argumentos o subrutas si las hubiera en el futuro.
-                    // Si la ruta exacta siempre es "goals_screen", == "goals_screen" también funcionaría.
                     selected = navController.currentDestination?.route?.startsWith("goals_screen") == true,
                     onClick = {
                         navController.navigate("goals_screen") {
-                            popUpTo("home_screen") { saveState = true } // Como otros ítems, guarda el estado
-                            launchSingleTop = true // Evita múltiples copias de la misma pantalla
-                            restoreState = true // Restaura el estado si ya estaba en el back stack
+                            popUpTo("home_screen") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Filled.TrackChanges, contentDescription = "Establecer Objetivos") }, // <--- ICONO ACTUALIZADO
+                    icon = { Icon(Icons.Filled.TrackChanges, contentDescription = "Establecer Objetivos") },
                     colors = NavigationDrawerItemDefaults.colors(
-                        // Mismos colores que los ítems no seleccionados por defecto
                         unselectedContainerColor = LightGrayBackground,
                         unselectedTextColor = DarkText,
                         unselectedIconColor = DarkText,
-                        // Y para cuando esté seleccionado, los mismos que "Inicio"
                         selectedContainerColor = PrimaryOrange,
                         selectedTextColor = Color.White,
                         selectedIconColor = Color.White,
                     ),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
-                // --- FIN DEL NUEVO ITEM ---
 
                 NavigationDrawerItem(
                     label = { Text("Equipos") },
-                    // Si tienes una ruta para equipos, actualiza esto
-                    selected = navController.currentDestination?.route == "teams_screen", // Ejemplo
+                    selected = navController.currentDestination?.route == "teams_screen",
                     onClick = {
                         // TODO: navController.navigate("teams_screen")
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Equipos") }, // Usé Icons.Filled.Group como un icono de ejemplo para equipos
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Equipos") },
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = LightGrayBackground,
                         unselectedTextColor = DarkText,
                         unselectedIconColor = DarkText
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Estadísticas del Jugador") },
+                    selected = navController.currentDestination?.route == "player_stats_screen", // La ruta exacta sin argumentos
+                    onClick = {
+                        navController.navigate("player_stats_screen") {
+                            popUpTo("home_screen") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                        scope.launch { drawerState.close() }
+                    },
+                    icon = { Icon(Icons.Filled.List, contentDescription = "Estadísticas del Jugador") }, // Podrías usar Icons.Filled.BarChart si lo tienes, o Icons.Filled.List
+                    colors = NavigationDrawerItemDefaults.colors(
+                        unselectedContainerColor = LightGrayBackground,
+                        unselectedTextColor = DarkText,
+                        unselectedIconColor = DarkText,
+                        selectedContainerColor = PrimaryOrange,
+                        selectedTextColor = Color.White,
+                        selectedIconColor = Color.White,
                     ),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
@@ -216,7 +219,7 @@ fun HomeScreen(
 
                 NavigationDrawerItem(
                     label = { Text("Configuración") },
-                    selected = navController.currentDestination?.route == "settings_screen", // Ejemplo
+                    selected = navController.currentDestination?.route == "settings_screen",
                     onClick = {
                         // TODO: navController.navigate("settings_screen")
                         scope.launch { drawerState.close() }
@@ -234,8 +237,8 @@ fun HomeScreen(
                     label = { Text("Cerrar Sesión") },
                     selected = false,
                     onClick = {
-                        scope.launch { drawerState.close() } // Cierra el Drawer antes de cerrar sesión
-                        onLogout() // Llama al callback para limpiar la sesión y navegar al login
+                        scope.launch { drawerState.close() }
+                        onLogout()
                     },
                     icon = { Icon(Icons.Filled.Logout, contentDescription = "Cerrar Sesión") },
                     colors = NavigationDrawerItemDefaults.colors(
@@ -292,7 +295,7 @@ fun HomeScreen(
                             .padding(horizontal = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        item {
+                        item { // This 'item' is for the fixed content at the top
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Botones de alternancia "Partidos/Entrenamientos" y "Fichas"
@@ -334,76 +337,68 @@ fun HomeScreen(
                             }
                         }
 
-                        // Sección "Eventos Recientes" (usando datos reales del ViewModel)
+                        // Sección "Eventos Recientes"
                         item {
-                            Column(
+                            Text(
+                                text = "Eventos Recientes",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkText
+                                ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 24.dp)
-                            ) {
-                                Text(
-                                    text = "Eventos Recientes",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = DarkText
-                                    ),
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-                                if (playerEvents.isEmpty()) {
-                                    Text("No hay eventos registrados para este jugador.", color = DarkText.copy(alpha = 0.6f))
-                                } else {
-                                    playerEvents.forEach { event ->
-                                        // Para el playerStats en EventItemCard, si realmente necesitas la PerformanceSheet
-                                        // asociada a ese evento Y ese jugador, tendrás que obtenerla.
-                                        // Por ahora, para evitar errores, si no hay PerformanceSheet asociada directamente,
-                                        // podrías pasar 'null' o una PerformanceSheet vacía por defecto.
-                                        // La solución ideal sería que EventItemCard solo requiera el Event y un PlayerId,
-                                        // y que la propia tarjeta obtenga los datos de rendimiento si los necesita,
-                                        // o que tengas un objeto de dominio combinado (e.g., EventWithPerformance)
-                                        // en tu ViewModel/DAO.
-
-                                        // Buscamos la PerformanceSheet para el evento y el jugador actual
-                                        val associatedPerformanceSheet = playerPerformanceSheets.find {
-                                            it.eventId == event.id && it.playerId == currentLoggedInPlayerId
-                                        }
-                                        EventItemCard(
-                                            event = event,
-                                            playerStats = associatedPerformanceSheet,
-                                            playerName = "Tu Jugador" // Aquí podrías cargar el nombre real del jugador desde PlayerViewModel
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                    }
+                                    .padding(bottom = 16.dp)
+                            )
+                        }
+                        if (playerEvents.isEmpty()) {
+                            item {
+                                Text("No hay eventos registrados para este jugador.", color = DarkText.copy(alpha = 0.6f))
+                            }
+                        } else {
+                            // CORRECCIÓN: Usar items() directamente en LazyColumn para la lista de eventos
+                            items(playerEvents) { event ->
+                                // Buscamos la PerformanceSheet para el evento y el jugador actual
+                                val associatedPerformanceSheet = playerPerformanceSheets.find {
+                                    it.eventId == event.id && it.playerId == currentLoggedInPlayerId
                                 }
+                                EventItemCard(
+                                    event = event,
+                                    playerStats = associatedPerformanceSheet,
+                                    playerName = "Tu Jugador" // Aquí podrías cargar el nombre real del jugador desde PlayerViewModel
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
                             }
                         }
 
-                        // Sección "Fichas de Rendimiento" (usando datos reales del ViewModel)
+                        // Sección "Fichas de Rendimiento"
                         item {
-                            Column(
+                            Text(
+                                text = "Fichas de Rendimiento",
+                                style = MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = DarkText
+                                ),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 24.dp)
-                            ) {
-                                Text(
-                                    text = "Fichas de Rendimiento",
-                                    style = MaterialTheme.typography.titleLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = DarkText
-                                    ),
-                                    modifier = Modifier.padding(bottom = 16.dp)
-                                )
-                                if (playerPerformanceSheets.isEmpty()) {
-                                    Text("No hay fichas de rendimiento para este jugador.", color = DarkText.copy(alpha = 0.6f))
-                                } else {
-                                    playerPerformanceSheets.forEach { sheet ->
-                                        PerformanceItemCard(
-                                            performanceSheet = sheet,
-                                            playerName = "Tu Jugador"
-                                        )
-                                        Spacer(modifier = Modifier.height(12.dp))
-                                    }
-                                }
+                                    .padding(bottom = 16.dp, top = 24.dp) // Añadido top padding para separar
+                            )
+                        }
+                        if (playerPerformanceSheets.isEmpty()) {
+                            item {
+                                Text("No hay fichas de rendimiento para este jugador.", color = DarkText.copy(alpha = 0.6f))
                             }
+                        } else {
+                            // CORRECCIÓN: Usar items() directamente en LazyColumn para la lista de fichas
+                            items(playerPerformanceSheets) { sheet ->
+                                PerformanceItemCard(
+                                    performanceSheet = sheet,
+                                    playerName = "Tu Jugador"
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+                        }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp)) // Espaciador al final
                         }
                     }
                 }

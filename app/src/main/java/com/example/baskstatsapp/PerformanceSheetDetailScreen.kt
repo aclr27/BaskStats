@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/baskstatsapp/PerformanceSheetDetailScreen.kt
 package com.example.baskstatsapp
 
 import android.annotation.SuppressLint
@@ -32,8 +31,11 @@ import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.PlayerViewModel // Necesario para el preview si lo usas
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId // Importar ZoneId para la conversión de timestamp
+import java.time.format.DateTimeFormatter // Importar DateTimeFormatter
 import kotlinx.coroutines.flow.flowOf
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -59,6 +61,9 @@ fun PerformanceSheetDetailScreen(
             flowOf(null)
         }
     }.collectAsState(initial = null)
+
+    // Formateador para la fecha
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
 
     Scaffold(
         topBar = {
@@ -105,7 +110,12 @@ fun PerformanceSheetDetailScreen(
                 if (performanceSheet == null) {
                     Text("Cargando ficha o ficha no encontrada...", color = DarkText.copy(alpha = 0.7f))
                 } else {
-                    Text(text = "Fecha: ${performanceSheet!!.date}", style = MaterialTheme.typography.bodyLarge)
+                    // **CORRECCIÓN AQUÍ:** Convertimos el timestamp (Long) a LocalDate y lo formateamos
+                    val sheetDate = Instant.ofEpochMilli(performanceSheet!!.eventDate)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    Text(text = "Fecha: ${sheetDate.format(dateFormatter)}", style = MaterialTheme.typography.bodyLarge)
+
                     Text(text = "Puntos: ${performanceSheet!!.points}", style = MaterialTheme.typography.bodyLarge)
                     Text(text = "Asistencias: ${performanceSheet!!.assists}", style = MaterialTheme.typography.bodyLarge)
                     Text(text = "Rebotes Ofensivos: ${performanceSheet!!.offensiveRebounds}", style = MaterialTheme.typography.bodyLarge)
@@ -131,7 +141,8 @@ fun PerformanceSheetDetailScreen(
                     if (associatedEvent != null) {
                         Text("Tipo de Evento: ${associatedEvent!!.type}", style = MaterialTheme.typography.bodyLarge)
                         associatedEvent!!.opponent?.let { Text("vs. $it", style = MaterialTheme.typography.bodyLarge) }
-                        Text("Fecha: ${associatedEvent!!.dateTime.toLocalDate()}", style = MaterialTheme.typography.bodyLarge)
+                        // Asumiendo que associatedEvent!!.dateTime ya es un LocalDateTime
+                        Text("Fecha: ${associatedEvent!!.dateTime.toLocalDate().format(dateFormatter)}", style = MaterialTheme.typography.bodyLarge)
                     } else {
                         Text("No hay evento asociado o el evento no se encontró.", color = DarkText.copy(alpha = 0.7f))
                     }

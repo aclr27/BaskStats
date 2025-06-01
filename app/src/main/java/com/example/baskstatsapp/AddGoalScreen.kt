@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/baskstatsapp/screens/goals/AddGoalScreen.kt
 package com.example.baskstatsapp
 
 import androidx.compose.foundation.layout.Column
@@ -33,7 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.baskstatsapp.MainActivity
+// import com.example.baskstatsapp.MainActivity // Ya no es necesario si se pasa como parámetro
 import com.example.baskstatsapp.data.model.Goal
 import com.example.baskstatsapp.data.model.GoalFrequency
 import com.example.baskstatsapp.data.model.GoalType
@@ -42,7 +41,11 @@ import java.text.DecimalFormat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddGoalScreen(navController: NavController, goalViewModel: GoalViewModel) {
+fun AddGoalScreen(
+    navController: NavController,
+    goalViewModel: GoalViewModel,
+    currentLoggedInPlayerId: Long? // <-- ¡AÑADIDO EL PARÁMETRO!
+) {
     // description ya no es editable directamente, se genera
     var typeExpanded by remember { mutableStateOf(false) }
     var selectedGoalType by remember { mutableStateOf(GoalType.POINTS) }
@@ -183,7 +186,8 @@ fun AddGoalScreen(navController: NavController, goalViewModel: GoalViewModel) {
 
             Button(
                 onClick = {
-                    val currentPlayersId = MainActivity.currentLoggedInPlayerId
+                    // Usar el parámetro 'currentLoggedInPlayerId'
+                    val currentPlayersId = currentLoggedInPlayerId
                     val targetDouble = quantity.replace(",", ".").toDoubleOrNull() // Manejar coma como separador decimal
                     if (currentPlayersId != null && targetDouble != null) {
                         val newGoal = Goal(
@@ -219,7 +223,7 @@ fun AddGoalScreen(navController: NavController, goalViewModel: GoalViewModel) {
     }
 }
 
-// Funciones de extensión para localizar los textos de los enums
+// Funciones de extensión para localizar los textos de los enums (mantienen igual)
 @Composable
 fun GoalType.toLocalizedText(): String {
     return when (this) {
@@ -259,7 +263,7 @@ fun GoalFrequency.toLocalizedText(): String {
     }
 }
 
-// Función para generar la descripción del objetivo automáticamente
+// Función para generar la descripción del objetivo automáticamente (mantiene igual)
 fun generateGoalDescription(type: GoalType, quantity: Double, frequency: GoalFrequency): String {
     val df = DecimalFormat("#.##") // Formateador para dos decimales
     val qStr = df.format(quantity)
@@ -288,8 +292,8 @@ fun generateGoalDescription(type: GoalType, quantity: Double, frequency: GoalFre
         GoalFrequency.PER_MONTH -> " este mes"
         GoalFrequency.PER_SEASON -> " esta temporada"
         GoalFrequency.OVERALL -> "" // La descripción ya lo implica
-        GoalFrequency.LAST_X_GAMES -> " en los últimos $qStr partidos" // qStr aquí es la cantidad de partidos, no el objetivo
-        GoalFrequency.NEXT_X_GAMES -> " en los próximos $qStr partidos" // qStr aquí es la cantidad de partidos, no el objetivo
+        GoalFrequency.LAST_X_GAMES -> " en los últimos X partidos" // qStr aquí es la cantidad de partidos, no el objetivo
+        GoalFrequency.NEXT_X_GAMES -> " en los próximos X partidos" // qStr aquí es la cantidad de partidos, no el objetivo
         GoalFrequency.SPECIFIC_GAME -> " en un partido específico" // Necesitaría un selector de partido
         GoalFrequency.PERSONAL_BEST -> " como récord personal"
         GoalFrequency.MAINTAIN_PERCENTAGE -> "" // Implícito en el tipo de objetivo

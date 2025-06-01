@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/baskstatsapp/PerformanceSheetForm.kt
 package com.example.baskstatsapp
 
 import android.os.Build
@@ -28,6 +27,7 @@ import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import java.time.ZoneId // Importar ZoneId
 
 // Asegúrate de que StatInputField y ShotInputField estén accesibles.
 // Si están en un paquete diferente, ajusta la importación, e.g.:
@@ -43,11 +43,11 @@ fun PerformanceSheetForm(
     onCancel: () -> Unit,
     title: String,
     availableEvents: List<Event>? = null,
-    initialSelectedEventId: Long? = null // <-- ¡NUEVO PARÁMETRO AQUÍ!
+    initialSelectedEventId: Long? = null
 ) {
     var points by remember { mutableStateOf(initialPerformanceSheet?.points?.toString() ?: "0") }
     var assists by remember { mutableStateOf(initialPerformanceSheet?.assists?.toString() ?: "0") }
-    var rebounds by remember { mutableStateOf(initialPerformanceSheet?.rebounds?.toString() ?: "0") }
+    // Eliminado 'rebounds' como campo de entrada directo. Se calcula desde ofensivos/defensivos.
     var offensiveRebounds by remember { mutableStateOf(initialPerformanceSheet?.offensiveRebounds?.toString() ?: "0") }
     var defensiveRebounds by remember { mutableStateOf(initialPerformanceSheet?.defensiveRebounds?.toString() ?: "0") }
     var steals by remember { mutableStateOf(initialPerformanceSheet?.steals?.toString() ?: "0") }
@@ -65,7 +65,20 @@ fun PerformanceSheetForm(
 
     var isValid by remember { mutableStateOf(true) }
 
-    var selectedDate by remember { mutableStateOf(initialPerformanceSheet?.date ?: LocalDate.now()) }
+    // Fecha inicial del evento: Si hay una ficha inicial, usa su eventDate; si no, usa la fecha actual.
+    // Convertimos de Long a LocalDate para el DatePicker, y de vuelta a Long para guardar.
+    var selectedLocalDate by remember {
+        mutableStateOf(
+            if (initialPerformanceSheet != null) {
+                // Convertir Long (milisegundos) a LocalDate
+                java.time.Instant.ofEpochMilli(initialPerformanceSheet.eventDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+            } else {
+                LocalDate.now()
+            }
+        )
+    }
 
     // Lógica para inicializar selectedEvent con initialSelectedEventId
     var selectedEvent by remember { mutableStateOf(
@@ -114,6 +127,7 @@ fun PerformanceSheetForm(
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Selector de evento
                 if (availableEvents != null && (initialPerformanceSheet?.eventId == null || selectedEvent == null)) {
                     ExposedDropdownMenuBox(
                         expanded = expanded,
@@ -140,6 +154,8 @@ fun PerformanceSheetForm(
                                     onClick = {
                                         selectedEvent = event
                                         expanded = false
+                                        // Cuando se selecciona un evento, actualiza la fecha de la ficha para que coincida
+                                        selectedLocalDate = event.dateTime.toLocalDate()
                                     }
                                 )
                             }
@@ -155,9 +171,28 @@ fun PerformanceSheetForm(
                     )
                 }
 
+                // Selector de Fecha (para casos donde no hay evento asociado o la fecha es diferente)
+                // Usamos el DatePicker de Material3 aquí si quieres permitir cambiar la fecha manualmente
+                // val datePickerDialog = rememberDatePickerDialog() // Esto sería una función que lanza el DatePickerDialog
+                // Por ahora, solo mostramos la fecha seleccionada.
+                Text(
+                    text = "Fecha: ${selectedLocalDate.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM))}",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .clickable {
+                            // TODO: Implementar DatePicker para cambiar selectedLocalDate
+                            // datePickerDialog.show()
+                        },
+                    color = DarkText,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+
                 StatInputField(label = "Puntos", value = points, onValueChange = { points = it })
                 StatInputField(label = "Asistencias", value = assists, onValueChange = { assists = it })
-                StatInputField(label = "Rebotes Totales", value = rebounds, onValueChange = { rebounds = it })
+                // Eliminado StatInputField para "Rebotes Totales" ya que no es un campo directo en el modelo
                 StatInputField(label = "Rebotes Ofensivos", value = offensiveRebounds, onValueChange = { offensiveRebounds = it })
                 StatInputField(label = "Rebotes Defensivos", value = defensiveRebounds, onValueChange = { defensiveRebounds = it })
                 StatInputField(label = "Robos", value = steals, onValueChange = { steals = it })
@@ -196,7 +231,7 @@ fun PerformanceSheetForm(
 
                 if (!isValid) {
                     Text(
-                        text = "Por favor, revisa los valores introducidos. Asegúrate de que sean números.",
+                        text = "Por favor, revisa los valores introducidos. Asegúrate de que sean números enteros válidos.",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -207,33 +242,53 @@ fun PerformanceSheetForm(
                 Button(
                     onClick = {
                         try {
+                            // Convertir todas las entradas a Int, verificando si son números válidos.
+                            val p = points.toIntOrNull() ?: throw NumberFormatException("Puntos")
+                            val a = assists.toIntOrNull() ?: throw NumberFormatException("Asistencias")
+                            val or = offensiveRebounds.toIntOrNull() ?: throw NumberFormatException("Rebotes Ofensivos")
+                            val dr = defensiveRebounds.toIntOrNull() ?: throw NumberFormatException("Rebotes Defensivos")
+                            val s = steals.toIntOrNull() ?: throw NumberFormatException("Robos")
+                            val b = blocks.toIntOrNull() ?: throw NumberFormatException("Tapones")
+                            val t = turnovers.toIntOrNull() ?: throw NumberFormatException("Pérdidas")
+                            val f = fouls.toIntOrNull() ?: throw NumberFormatException("Faltas")
+                            val ftm = freeThrowsMade.toIntOrNull() ?: throw NumberFormatException("Tiros Libres Anotados")
+                            val fta = freeThrowsAttempted.toIntOrNull() ?: throw NumberFormatException("Tiros Libres Intentados")
+                            val t2m = twoPointersMade.toIntOrNull() ?: throw NumberFormatException("Tiros de 2 Anotados")
+                            val t2a = twoPointersAttempted.toIntOrNull() ?: throw NumberFormatException("Tiros de 2 Intentados")
+                            val t3m = threePointersMade.toIntOrNull() ?: throw NumberFormatException("Tiros de 3 Anotados")
+                            val t3a = threePointersAttempted.toIntOrNull() ?: throw NumberFormatException("Tiros de 3 Intentados")
+                            val mp = minutesPlayed.toIntOrNull() ?: throw NumberFormatException("Minutos Jugados")
+                            val pm = plusMinus.toIntOrNull() ?: throw NumberFormatException("Plus/Minus")
+
                             val newSheet = PerformanceSheet(
-                                id = initialPerformanceSheet?.id ?: 0L,
-                                date = selectedDate,
+                                sheetId = initialPerformanceSheet?.sheetId ?: 0L, // Usar sheetId
                                 playerId = initialPerformanceSheet?.playerId ?: MainActivity.currentLoggedInPlayerId ?: -1L,
-                                eventId = selectedEvent?.id,
-                                points = points.toInt(),
-                                assists = assists.toInt(),
-                                rebounds = rebounds.toInt(),
-                                offensiveRebounds = offensiveRebounds.toInt(),
-                                defensiveRebounds = defensiveRebounds.toInt(),
-                                steals = steals.toInt(),
-                                blocks = blocks.toInt(),
-                                turnovers = turnovers.toInt(),
-                                fouls = fouls.toInt(),
-                                freeThrowsMade = freeThrowsMade.toInt(),
-                                freeThrowsAttempted = freeThrowsAttempted.toInt(),
-                                twoPointersMade = twoPointersMade.toInt(),
-                                twoPointersAttempted = twoPointersAttempted.toInt(),
-                                threePointersMade = threePointersMade.toInt(),
-                                threePointersAttempted = threePointersAttempted.toInt(),
-                                minutesPlayed = minutesPlayed.toInt(),
-                                plusMinus = plusMinus.toInt()
+                                eventId = selectedEvent?.id ?: 0L, // Si no hay evento, asigna 0L (o null si el modelo lo permite)
+                                // Convertir LocalDate a Long (milisegundos desde la época Unix)
+                                eventDate = selectedLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                                points = p,
+                                assists = a,
+                                offensiveRebounds = or,
+                                defensiveRebounds = dr,
+                                steals = s,
+                                turnovers = t,
+                                blocks = b,
+                                fouls = f,
+                                freeThrowsMade = ftm,
+                                freeThrowsAttempted = fta,
+                                twoPointersMade = t2m,
+                                twoPointersAttempted = t2a,
+                                threePointersMade = t3m,
+                                threePointersAttempted = t3a,
+                                minutesPlayed = mp,
+                                plusMinus = pm
                             )
                             isValid = true
                             onSave(newSheet)
                         } catch (e: NumberFormatException) {
                             isValid = false
+                            // Puedes usar un Toast o SnackBar aquí para mostrar un mensaje más específico al usuario
+                            // por ejemplo, "Valor inválido para: ${e.message}"
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -252,7 +307,7 @@ fun StatInputField(label: String, value: String, onValueChange: (String) -> Unit
     OutlinedTextField(
         value = value,
         onValueChange = { newValue ->
-            if (newValue.all { it.isDigit() } || newValue.isEmpty() || (label == "+/-" && newValue == "-")) {
+            if (newValue.all { it.isDigit() } || newValue.isEmpty() || (label == "+/-" && newValue == "-") || (label == "+/-" && newValue.length == 1 && newValue == "-")) {
                 onValueChange(newValue)
             }
         },

@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/baskstatsapp/screens/goals/EditGoalScreen.kt
 package com.example.baskstatsapp
 
 import android.os.Build
@@ -46,7 +45,12 @@ import java.text.DecimalFormat
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditGoalScreen(navController: NavController, goalViewModel: GoalViewModel, goalId: Long) {
+fun EditGoalScreen(
+    navController: NavController,
+    goalViewModel: GoalViewModel,
+    goalId: Long,
+    currentLoggedInPlayerId: Long? // <-- ¡AÑADIDO EL PARÁMETRO!
+) {
     var goal by remember { mutableStateOf<Goal?>(null) }
 
     // Ya no es editable directamente, se genera
@@ -65,7 +69,9 @@ fun EditGoalScreen(navController: NavController, goalViewModel: GoalViewModel, g
 
 
     // Cargar el objetivo al iniciar la pantalla
-    LaunchedEffect(goalId) {
+    LaunchedEffect(goalId, currentLoggedInPlayerId) { // Añadido currentLoggedInPlayerId como key
+        // Asegúrate de que el ViewModel esté cargando los objetivos para el jugador correcto
+        goalViewModel.setLoggedInPlayerId(currentLoggedInPlayerId)
         val loadedGoal = goalViewModel.getGoalById(goalId)
         loadedGoal?.let {
             goal = it
@@ -260,7 +266,6 @@ fun EditGoalScreen(navController: NavController, goalViewModel: GoalViewModel, g
                             goalViewModel.updateGoal(updatedGoal)
                             navController.popBackStack()
                         } else {
-                            // TODO: Mostrar un Toast o SnackBar indicando que la cantidad es inválida
                         }
                     }
                 },

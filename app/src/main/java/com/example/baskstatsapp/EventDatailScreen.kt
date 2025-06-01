@@ -38,6 +38,8 @@ import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import java.time.format.DateTimeFormatter
 import java.time.LocalDateTime
+import java.time.Instant // <-- Importación necesaria para convertir Long a LocalDateTime
+import java.time.ZoneId // <-- Importación necesaria para convertir Long a LocalDateTime
 import java.time.LocalDate
 import kotlinx.coroutines.flow.flowOf // Para el preview
 import kotlinx.coroutines.launch // <-- Nueva importación
@@ -65,14 +67,9 @@ fun EventDetailScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
+                    // Ahora el evento tiene un 'eventName' para el título
                     Text(
-                        text = event?.let {
-                            when (it.type) {
-                                EventType.MATCH -> "Partido"
-                                EventType.TRAINING -> "Entrenamiento"
-                                EventType.OTHER -> "Evento"
-                            }
-                        } ?: "Detalles del Evento", // Título por defecto si el evento es nulo
+                        text = event?.eventName ?: "Detalles del Evento", // Usar eventName para el título
                         color = DarkText,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
@@ -172,8 +169,8 @@ fun EventDetailScreen(
                         ) {
                             items(performanceSheets) { sheet ->
                                 PerformanceSheetSummaryCard(sheet) {
-                                    // Navegar al detalle de la ficha de rendimiento
-                                    navController.navigate("performance_sheet_detail_screen/${sheet.id}")
+                                    // NAVEGAR AL DETALLE DE LA FICHA DE RENDIMIENTO USANDO sheet.sheetId
+                                    navController.navigate("performance_sheet_detail_screen/${sheet.sheetId}") // <-- ¡CORREGIDO! Usar sheetId
                                 }
                             }
                         }
@@ -229,7 +226,8 @@ fun EventDetailScreen(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EventDetailsCard(event: Event) {
-    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") } // Formato corregido
+    // Formato de fecha y hora para LocalDateTime
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy - HH:mm") } // Formato mejorado
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -239,12 +237,19 @@ fun EventDetailsCard(event: Event) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = event.type.displayName(),
+                text = event.eventName, // Mostrar el nombre del evento
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryOrange
             )
             Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tipo: ${event.type.displayName()}", // Mostrar el tipo de evento
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = DarkText
+            )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "Fecha y Hora: ${event.dateTime.format(dateFormatter)}",
                 style = MaterialTheme.typography.bodyLarge,
@@ -290,6 +295,9 @@ fun EventDetailsCard(event: Event) {
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PerformanceSheetSummaryCard(sheet: PerformanceSheet, onClick: () -> Unit) {
+    // Convertir el timestamp (Long) de eventDate a LocalDateTime para formatear
+    val eventDateTime = Instant.ofEpochMilli(sheet.eventDate).atZone(ZoneId.systemDefault()).toLocalDateTime()
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd MMM yyyy") } // Formato de fecha
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -301,14 +309,16 @@ fun PerformanceSheetSummaryCard(sheet: PerformanceSheet, onClick: () -> Unit) {
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "Ficha de Rendimiento: ${sheet.date.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))}", // Formato corregido
+                text = "Ficha de Rendimiento del ${eventDateTime.format(dateFormatter)}", // <-- CORREGIDO: Usar eventDate
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryOrange
             )
             Spacer(modifier = Modifier.height(4.dp))
+            // Calcular rebotes totales
+            val totalRebounds = sheet.offensiveRebounds + sheet.defensiveRebounds
             Text(
-                text = "Puntos: ${sheet.points} | Asistencias: ${sheet.assists} | Rebotes: ${sheet.rebounds}",
+                text = "Puntos: ${sheet.points} | Asistencias: ${sheet.assists} | Rebotes: $totalRebounds", // <-- CORREGIDO: Sumar ofensivos y defensivos
                 style = MaterialTheme.typography.bodyMedium,
                 color = DarkText
             )
