@@ -17,6 +17,8 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.TrackChanges // <--- NUEVA IMPORTACIÓN PARA EL ICONO DE OBJETIVOS
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -46,6 +48,8 @@ import androidx.compose.runtime.getValue
 // Asegúrate de que estas importaciones son correctas para tus composables de tarjetas
 // Si EventItemCard y PerformanceItemCard están en el mismo paquete, no necesitarán importación explícita
 // Si están en un subpaquete, por ejemplo, 'composables', las importaciones serían así:
+// import com.example.baskstatsapp.composables.EventItemCard // <--- Ejemplo
+// import com.example.baskstatsapp.composables.PerformanceItemCard // <--- Ejemplo
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,11 +74,6 @@ fun HomeScreen(
 
     val playerPerformanceSheets by performanceSheetViewModel.getPerformanceSheetsForPlayer(currentLoggedInPlayerId ?: -1L)
         .collectAsState(initial = emptyList())
-
-    // O si quieres TODOS los eventos/fichas (sin filtrar por jugador logueado):
-    // val allEvents by eventViewModel.allEvents.collectAsState(initial = emptyList())
-    // val allPerformanceSheets by performanceSheetViewModel.allPerformanceSheets.collectAsState(initial = emptyList())
-
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -166,14 +165,45 @@ fun HomeScreen(
                     ),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
+
+                // --- NUEVO ITEM PARA "ESTABLECER OBJETIVOS" ---
+                NavigationDrawerItem(
+                    label = { Text("Establecer Objetivos") },
+                    // Usamos startsWith para manejar rutas con argumentos o subrutas si las hubiera en el futuro.
+                    // Si la ruta exacta siempre es "goals_screen", == "goals_screen" también funcionaría.
+                    selected = navController.currentDestination?.route?.startsWith("goals_screen") == true,
+                    onClick = {
+                        navController.navigate("goals_screen") {
+                            popUpTo("home_screen") { saveState = true } // Como otros ítems, guarda el estado
+                            launchSingleTop = true // Evita múltiples copias de la misma pantalla
+                            restoreState = true // Restaura el estado si ya estaba en el back stack
+                        }
+                        scope.launch { drawerState.close() }
+                    },
+                    icon = { Icon(Icons.Filled.TrackChanges, contentDescription = "Establecer Objetivos") }, // <--- ICONO ACTUALIZADO
+                    colors = NavigationDrawerItemDefaults.colors(
+                        // Mismos colores que los ítems no seleccionados por defecto
+                        unselectedContainerColor = LightGrayBackground,
+                        unselectedTextColor = DarkText,
+                        unselectedIconColor = DarkText,
+                        // Y para cuando esté seleccionado, los mismos que "Inicio"
+                        selectedContainerColor = PrimaryOrange,
+                        selectedTextColor = Color.White,
+                        selectedIconColor = Color.White,
+                    ),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+                // --- FIN DEL NUEVO ITEM ---
+
                 NavigationDrawerItem(
                     label = { Text("Equipos") },
-                    selected = false,
+                    // Si tienes una ruta para equipos, actualiza esto
+                    selected = navController.currentDestination?.route == "teams_screen", // Ejemplo
                     onClick = {
                         // TODO: navController.navigate("teams_screen")
                         scope.launch { drawerState.close() }
                     },
-                    icon = { Icon(Icons.Filled.Group, contentDescription = "Equipos") },
+                    icon = { Icon(Icons.Filled.Group, contentDescription = "Equipos") }, // Usé Icons.Filled.Group como un icono de ejemplo para equipos
                     colors = NavigationDrawerItemDefaults.colors(
                         unselectedContainerColor = LightGrayBackground,
                         unselectedTextColor = DarkText,
@@ -186,7 +216,7 @@ fun HomeScreen(
 
                 NavigationDrawerItem(
                     label = { Text("Configuración") },
-                    selected = false,
+                    selected = navController.currentDestination?.route == "settings_screen", // Ejemplo
                     onClick = {
                         // TODO: navController.navigate("settings_screen")
                         scope.launch { drawerState.close() }

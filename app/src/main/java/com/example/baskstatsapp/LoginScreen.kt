@@ -41,6 +41,7 @@ import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import com.example.baskstatsapp.viewmodel.PlayerViewModel
 import kotlinx.coroutines.launch
+// import org.mindrot.jbcrypt.BCrypt // <-- Ya NO NECESITAS importar BCrypt aquí para el login
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,8 +50,8 @@ fun LoginScreen(
     playerViewModel: PlayerViewModel,
     onLoginSuccess: (Long) -> Unit // Callback para cuando el login sea exitoso
 ) {
-    var email by remember { mutableStateOf("") } // Cambiado a email
-    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") } // Esta es la contraseña en texto plano
     var passwordVisibility by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
@@ -117,7 +118,7 @@ fun LoginScreen(
 
                 // Campo de contraseña
                 TextField(
-                    value = password,
+                    value = password, // Contraseña en texto plano
                     onValueChange = { password = it },
                     label = { Text("Contraseña") },
                     visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
@@ -153,6 +154,7 @@ fun LoginScreen(
                         }
 
                         scope.launch {
+                            // MODIFICADO: Pasa la contraseña en texto plano, no hasheada aquí
                             val player = playerViewModel.loginPlayer(email, password)
                             if (player != null) {
                                 Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()

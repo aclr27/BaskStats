@@ -23,12 +23,33 @@ import androidx.navigation.navArgument
 import androidx.room.Room
 import com.example.baskstatsapp.data.BaskStatsDatabase
 import com.example.baskstatsapp.dao.EventDao
+import com.example.baskstatsapp.dao.GoalDao
 import com.example.baskstatsapp.dao.PerformanceSheetDao
 import com.example.baskstatsapp.dao.PlayerDao
 import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.viewmodel.EventViewModel
+import com.example.baskstatsapp.viewmodel.GoalViewModel
+import com.example.baskstatsapp.viewmodel.GoalViewModelFactory
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
 import com.example.baskstatsapp.viewmodel.PlayerViewModel
+
+// Importa tus pantallas explícitamente si están en subpaquetes
+import com.example.baskstatsapp.LoginScreen
+import com.example.baskstatsapp.RegistrationScreen
+import com.example.baskstatsapp.HomeScreen
+import com.example.baskstatsapp.EventsScreen
+import com.example.baskstatsapp.EventDetailScreen
+import com.example.baskstatsapp.EditEventScreen
+import com.example.baskstatsapp.PerformanceSheetsScreen
+import com.example.baskstatsapp.PerformanceSheetDetailScreen
+import com.example.baskstatsapp.AddEventScreen
+import com.example.baskstatsapp.AddPerformanceSheetScreen
+import com.example.baskstatsapp.EditPerformanceSheetScreen
+import com.example.baskstatsapp.PlayerStatsScreen
+import com.example.baskstatsapp.GoalsScreen
+import com.example.baskstatsapp.AddGoalScreen
+import com.example.baskstatsapp.EditGoalScreen
+
 
 class MainActivity : ComponentActivity() {
 
@@ -47,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private val eventDao: EventDao by lazy { database.eventDao() }
     private val performanceSheetDao: PerformanceSheetDao by lazy { database.performanceSheetDao() }
     private val playerDao: PlayerDao by lazy { database.playerDao() }
+    private val goalDao: GoalDao by lazy { database.goalDao()}
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,6 +88,7 @@ class MainActivity : ComponentActivity() {
                     val playerViewModel: PlayerViewModel = viewModel(factory = PlayerViewModelFactory(playerDao))
                     val eventViewModel: EventViewModel = viewModel(factory = EventViewModelFactory(eventDao))
                     val performanceSheetViewModel: PerformanceSheetViewModel = viewModel(factory = PerformanceSheetViewModelFactory(performanceSheetDao))
+                    val goalViewModel: GoalViewModel = viewModel(factory = GoalViewModelFactory(goalDao))
 
                     NavHost(
                         navController = navController,
@@ -79,7 +102,11 @@ class MainActivity : ComponentActivity() {
                                     sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
                                     currentLoggedInPlayerId = playerId
                                     navController.navigate("home_screen") {
-                                        popUpTo("login_screen") { inclusive = true }
+                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen en este caso)
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            inclusive = true
+                                        }
+                                        launchSingleTop = true // Evita duplicados si home_screen ya estuviera en la pila
                                     }
                                 }
                             )
@@ -92,8 +119,12 @@ class MainActivity : ComponentActivity() {
                                     sharedPrefs.edit().putLong("logged_in_player_id", playerId).apply()
                                     currentLoggedInPlayerId = playerId
                                     navController.navigate("home_screen") {
-                                        popUpTo("registration_screen") { inclusive = true }
-                                        popUpTo("login_screen") { inclusive = true }
+                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen en este caso)
+                                        // Se elimina la doble popUpTo redundante
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            inclusive = true
+                                        }
+                                        launchSingleTop = true // Evita duplicados
                                     }
                                 }
                             )
@@ -107,7 +138,12 @@ class MainActivity : ComponentActivity() {
                                     sharedPrefs.edit().remove("logged_in_player_id").apply()
                                     currentLoggedInPlayerId = null
                                     navController.navigate("login_screen") {
-                                        popUpTo(0) { inclusive = true }
+                                        // MODIFICADO: Limpia toda la pila hasta el inicio del grafo (login_screen)
+                                        // Esto asegura que no queden pantallas detrás que el usuario pueda alcanzar con el botón Atrás.
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            inclusive = true
+                                        }
+                                        launchSingleTop = true // Evita crear múltiples instancias de login_screen
                                     }
                                 }
                             )
@@ -172,10 +208,8 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(navArgument("eventId") {
                                 type = NavType.LongType
                                 defaultValue = -1L
-                                // ELIMINADO: nullable = true // Esto causó el error para LongType
                             })
                         ) { backStackEntry ->
-                            // El `takeIf` maneja la opcionalidad correctamente aquí.
                             val eventId = backStackEntry.arguments?.getLong("eventId")?.takeIf { it != -1L }
                             AddPerformanceSheetScreen(
                                 navController = navController,
@@ -210,6 +244,29 @@ class MainActivity : ComponentActivity() {
                                 playerViewModel = playerViewModel
                             )
                         }
+                        composable("goals_screen") { // Ruta para la lista de objetivos
+                            GoalsScreen(
+                                navController = navController,
+                                goalViewModel = goalViewModel // Pasa el ViewModel
+                            )
+                        }
+                        composable("add_goal_screen") { // Ruta para añadir un nuevo objetivo
+                            AddGoalScreen(
+                                navController = navController,
+                                goalViewModel = goalViewModel // Pasa el ViewModel
+                            )
+                        }
+                        composable(
+                            route = "edit_goal_screen/{goalId}", // Ruta para editar un objetivo específico
+                            arguments = listOf(navArgument("goalId") { type = NavType.LongType; defaultValue = -1L })
+                        ) { backStackEntry ->
+                            val goalId = backStackEntry.arguments?.getLong("goalId") ?: -1L
+                            EditGoalScreen(
+                                navController = navController,
+                                goalViewModel = goalViewModel, // Pasa el ViewModel
+                                goalId = goalId // Pasa el ID del objetivo a editar
+                            )
+                        }
                     }
                 }
             }
@@ -217,6 +274,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+// Tus clases de ViewModelFactory existentes
 class EventViewModelFactory(private val eventDao: EventDao) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(EventViewModel::class.java)) {

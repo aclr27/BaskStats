@@ -51,10 +51,9 @@ fun EventsScreen(
     val eventsFlow = remember(MainActivity.currentLoggedInPlayerId) {
         val playerId = MainActivity.currentLoggedInPlayerId
         if (playerId != null) {
-            // Asegúrate de que este método exista en tu EventViewModel
             eventViewModel.getEventsByPlayerId(playerId)
         } else {
-            flowOf(emptyList()) // Si no hay jugador loggeado, devuelve una lista vacía
+            flowOf(emptyList())
         }
     }
     // Collect the events from the flow
@@ -175,34 +174,6 @@ fun EventListItem(event: Event, onClick: (Event) -> Unit) { // Changed onClick s
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
-            // Optional: Add an icon or score display here
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@RequiresApi(Build.VERSION_CODES.O)
-@Composable
-fun PreviewEventsScreen() {
-    BaskStatsAppTheme {
-        val mockEventDao = object : EventDao {
-            override fun getAllEvents(): kotlinx.coroutines.flow.Flow<List<Event>> = flowOf(
-                listOf(
-                    Event(1, EventType.MATCH, LocalDateTime.now(), "Team A", 80, 75, "Notas 1", 1L),
-                    Event(2, EventType.TRAINING, LocalDateTime.now().minusDays(1), null, null, null, "Notas 2", 1L),
-                    Event(3, EventType.MATCH, LocalDateTime.now().minusDays(2), "Team B", 90, 85, "Notas 3", 1L)
-                )
-            )
-            override fun getEventById(id: Long): kotlinx.coroutines.flow.Flow<Event?> = flowOf(null)
-            override suspend fun insert(event: Event): Long = 0L
-            override suspend fun update(event: Event) {}
-            override suspend fun delete(event: Event) {}
-            // Mock para getEventsByPlayerId - asegúrate de que este método existe en tu EventDao real
-            override fun getEventsByPlayerId(playerId: Long): kotlinx.coroutines.flow.Flow<List<Event>> = getAllEvents()
-            override fun getEventsByDate(date: LocalDate): kotlinx.coroutines.flow.Flow<List<Event>> = flowOf(emptyList())
-        }
-        val eventViewModel = EventViewModel(mockEventDao)
-        MainActivity.currentLoggedInPlayerId = 1L // Simulate logged in user
-        EventsScreen(navController = rememberNavController(), eventViewModel = eventViewModel)
     }
 }

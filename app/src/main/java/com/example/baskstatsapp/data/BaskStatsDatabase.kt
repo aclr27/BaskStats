@@ -14,23 +14,24 @@ import com.example.baskstatsapp.dao.EventDao
 import com.example.baskstatsapp.model.Event
 import com.example.baskstatsapp.model.PerformanceSheet
 import com.example.baskstatsapp.converters.Converters
+import com.example.baskstatsapp.dao.GoalDao
 import com.example.baskstatsapp.dao.PerformanceSheetDao
 import com.example.baskstatsapp.dao.PlayerDao
+import com.example.baskstatsapp.data.model.Goal
 import com.example.baskstatsapp.model.Player
 /**
  * BAskStatsDatabase donde recoge todos los datos de la app.
  * Pasa a Room las entidades y vesión y como convertir los tipos de datos raros como las
  * fechas.
  */
-@Database(entities = [Event::class, PerformanceSheet::class, Player::class],
-    version = 3,
+@Database(entities = [Event::class, PerformanceSheet::class, Player::class, Goal::class],
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class) // Registra tus convertidores de tipo aquí
 abstract class BaskStatsDatabase : RoomDatabase() {
-    //Se comunica con el Room
     abstract fun eventDao(): EventDao
-    //Y donde se crean las fichas de rendimiento.
     abstract fun performanceSheetDao(): PerformanceSheetDao
     abstract fun playerDao(): PlayerDao
+    abstract fun goalDao(): GoalDao
 }
