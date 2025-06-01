@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/baskstatsapp/RegistrationScreen.kt
 package com.example.baskstatsapp
 
 import android.widget.Toast
@@ -18,7 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope // <-- Importar para coroutines
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,20 +42,21 @@ import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 
 import com.example.baskstatsapp.viewmodel.PlayerViewModel
 import com.example.baskstatsapp.model.Player
-import kotlinx.coroutines.launch // <-- Importar para scope.launch
-import org.mindrot.jbcrypt.BCrypt // <-- Importar BCrypt para hashing de contraseñas
+import kotlinx.coroutines.launch
+import org.mindrot.jbcrypt.BCrypt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistrationScreen(
     navController: NavController,
     playerViewModel: PlayerViewModel,
-    onRegistrationSuccess: (Long) -> Unit // Callback para cuando el registro sea exitoso
+    onRegistrationSuccess: (Long) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var playerName by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") } // <-- ¡Añadido el estado para username!
     var playerNumber by remember { mutableStateOf("") }
     var playerPosition by remember { mutableStateOf("") }
 
@@ -62,7 +64,7 @@ fun RegistrationScreen(
     var confirmPasswordVisibility by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val scope = rememberCoroutineScope() // <-- Scope para lanzar coroutines
+    val scope = rememberCoroutineScope()
 
     val montserratFontFamily = FontFamily(
         Font(R.font.montserrat_variablefont_wght, FontWeight.Normal),
@@ -111,12 +113,11 @@ fun RegistrationScreen(
                         .padding(bottom = 16.dp)
                 )
 
-                // Campo de Correo Electrónico
+                // Campo de Nombre de Usuario (NUEVO)
                 OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Correo electrónico") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), // Teclado de email
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Nombre de usuario") },
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         containerColor = Color.White,
                         focusedBorderColor = PrimaryOrange,
@@ -130,6 +131,28 @@ fun RegistrationScreen(
                         .fillMaxWidth()
                         .padding(bottom = 16.dp)
                 )
+
+                // Campo de Correo Electrónico
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Correo electrónico") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        containerColor = Color.White,
+                        focusedBorderColor = PrimaryOrange,
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        cursorColor = PrimaryOrange,
+                        focusedLabelColor = DarkText,
+                        unfocusedLabelColor = DarkText
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
+                )
+
+                // ... (el resto de los campos como playerNumber, playerPosition, password, confirmPassword)
 
                 // Campo de Número de Camiseta (Opcional)
                 OutlinedTextField(
@@ -234,12 +257,13 @@ fun RegistrationScreen(
                         .padding(bottom = 24.dp)
                 )
 
+
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank() || playerName.isBlank()) {
+                        if (email.isBlank() || password.isBlank() || playerName.isBlank() || username.isBlank()) { // <-- Añadido username a la validación
                             Toast.makeText(
                                 context,
-                                "Correo, nombre y contraseña son obligatorios",
+                                "Correo, nombre, nombre de usuario y contraseña son obligatorios", // <-- Mensaje actualizado
                                 Toast.LENGTH_SHORT
                             ).show()
                             return@Button
@@ -252,7 +276,7 @@ fun RegistrationScreen(
                             ).show()
                             return@Button
                         }
-                        if (password.length < 6) { // Requiere mínimo 6 caracteres
+                        if (password.length < 6) {
                             Toast.makeText(
                                 context,
                                 "La contraseña debe tener al menos 6 caracteres",
@@ -261,46 +285,42 @@ fun RegistrationScreen(
                             return@Button
                         }
 
-                        scope.launch { // Usar rememberCoroutineScope para lanzar la coroutine
+                        scope.launch {
                             try {
-                                // Hashear la contraseña antes de guardarla
                                 val passwordHashed = BCrypt.hashpw(password, BCrypt.gensalt())
-                                // Para DEVELOPMENT_ONLY sin jbcrypt: val passwordHashed = password
 
                                 val newPlayer = Player(
                                     name = playerName,
                                     email = email,
-                                    passwordHash = passwordHashed, // Usar el hash
+                                    passwordHash = passwordHashed,
+                                    username = username, // <-- ¡Pasado el username aquí!
                                     number = playerNumber.toIntOrNull(),
                                     position = playerPosition.ifBlank { null },
                                     teamId = null,
                                     photoUrl = null
                                 )
-                                // Intentar insertar el jugador
                                 val playerId = playerViewModel.registerPlayer(newPlayer)
-                                if (playerId > 0) { // Si el ID es mayor que 0, la inserción fue exitosa
+                                if (playerId > 0) {
                                     Toast.makeText(
                                         context,
                                         "Registro exitoso para ${email}",
                                         Toast.LENGTH_SHORT
                                     ).show()
-                                    onRegistrationSuccess(playerId) // Llamar al callback de éxito
+                                    onRegistrationSuccess(playerId)
                                 } else {
-                                    // Esto podría ocurrir si el email ya existe y PlayerDao usa OnConflictStrategy.ABORT
                                     Toast.makeText(
                                         context,
-                                        "Fallo en el registro. El correo electrónico ya está en uso.",
+                                        "Fallo en el registro. El correo electrónico o nombre de usuario ya está en uso.",
                                         Toast.LENGTH_LONG
                                     ).show()
                                 }
                             } catch (e: Exception) {
-                                // Capturar cualquier otra excepción durante la inserción
                                 Toast.makeText(
                                     context,
                                     "Error al registrar: ${e.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                e.printStackTrace() // Imprime el stack trace para depuración
+                                e.printStackTrace()
                             }
                         }
                     },

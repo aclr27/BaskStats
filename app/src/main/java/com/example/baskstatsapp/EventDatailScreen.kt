@@ -286,7 +286,7 @@ fun EventDetailsCard(event: Event) {
 
 
 // Card de resumen de ficha de rendimiento (puede ser similar a EventCard pero mostrando stats clave)
-// Asegúrate de que esta función está disponible, si la tienes en PermormanceSheetsScreen.kt, puedes reutilizarla.
+// Asegúrate de que esta función está disponible, si la tienes en PerformanceSheetsScreen.kt, puedes reutilizarla.
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PerformanceSheetSummaryCard(sheet: PerformanceSheet, onClick: () -> Unit) {

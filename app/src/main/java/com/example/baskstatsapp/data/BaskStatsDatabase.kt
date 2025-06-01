@@ -23,7 +23,7 @@ import com.example.baskstatsapp.model.Player
  * fechas.
  */
 @Database(entities = [Event::class, PerformanceSheet::class, Player::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class) // Registra tus convertidores de tipo aquí

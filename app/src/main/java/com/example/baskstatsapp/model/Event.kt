@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/baskstatsapp/model/Event.kt
 package com.example.baskstatsapp.model
 
 import androidx.room.Entity
@@ -26,7 +27,7 @@ data class Event(
     /** Notas o comentarios adicionales sobre el evento. */
     val notes: String? = null,
 
-    val playerId: Long?
+    val playerId: Long? // Este es el ID del jugador que añade el evento.
 )
 
 /**

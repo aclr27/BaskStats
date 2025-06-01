@@ -1,8 +1,10 @@
+// app/src/main/java/com/example/baskstatsapp/PerformanceSheetForm.kt
 package com.example.baskstatsapp
 
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,19 +29,22 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
+// Asegúrate de que StatInputField y ShotInputField estén accesibles.
+// Si están en un paquete diferente, ajusta la importación, e.g.:
+// import com.example.baskstatsapp.composables.StatInputField
+// import com.example.baskstatsapp.composables.ShotInputField
+
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PerformanceSheetForm(
-    // Parámetros para el formulario
-    initialPerformanceSheet: PerformanceSheet?, // Para edición, si es nulo es para añadir
-    onSave: (PerformanceSheet) -> Unit, // Callback cuando se guarda la ficha
-    onCancel: () -> Unit, // Callback para cancelar
+    initialPerformanceSheet: PerformanceSheet?,
+    onSave: (PerformanceSheet) -> Unit,
+    onCancel: () -> Unit,
     title: String,
-    // Puedes pasar los eventos para un selector si quieres vincular la ficha
-    availableEvents: List<Event>? = null // Lista de eventos disponibles para vincular la ficha
+    availableEvents: List<Event>? = null,
+    initialSelectedEventId: Long? = null // <-- ¡NUEVO PARÁMETRO AQUÍ!
 ) {
-    // Estados del formulario
     var points by remember { mutableStateOf(initialPerformanceSheet?.points?.toString() ?: "0") }
     var assists by remember { mutableStateOf(initialPerformanceSheet?.assists?.toString() ?: "0") }
     var rebounds by remember { mutableStateOf(initialPerformanceSheet?.rebounds?.toString() ?: "0") }
@@ -58,21 +63,21 @@ fun PerformanceSheetForm(
     var minutesPlayed by remember { mutableStateOf(initialPerformanceSheet?.minutesPlayed?.toString() ?: "0") }
     var plusMinus by remember { mutableStateOf(initialPerformanceSheet?.plusMinus?.toString() ?: "0") }
 
-    // Estado para la validación (ej. campos vacíos que no deberían serlo)
     var isValid by remember { mutableStateOf(true) }
 
-    // Para la fecha de la ficha (si no está vinculada a un evento)
     var selectedDate by remember { mutableStateOf(initialPerformanceSheet?.date ?: LocalDate.now()) }
 
-    // Para seleccionar evento si es relevante
+    // Lógica para inicializar selectedEvent con initialSelectedEventId
     var selectedEvent by remember { mutableStateOf(
-        if (initialPerformanceSheet?.eventId != null && availableEvents != null) {
+        if (initialSelectedEventId != null && availableEvents != null) {
+            availableEvents.firstOrNull { it.id == initialSelectedEventId }
+        } else if (initialPerformanceSheet?.eventId != null && availableEvents != null) {
             availableEvents.firstOrNull { it.id == initialPerformanceSheet.eventId }
         } else {
             null
         }
     )}
-    var expanded by remember { mutableStateOf(false) } // Para el DropdownMenu
+    var expanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -106,15 +111,16 @@ fun PerformanceSheetForm(
                     .padding(paddingValues)
                     .background(LightGrayBackground)
                     .padding(16.dp)
-                    .verticalScroll(rememberScrollState()), // Permite scroll en el formulario
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Selector de evento (si hay eventos disponibles y la ficha no está vinculada a uno)
                 if (availableEvents != null && (initialPerformanceSheet?.eventId == null || selectedEvent == null)) {
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
                     ) {
                         OutlinedTextField(
                             value = selectedEvent?.let { "${it.type} - ${it.dateTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT))}" } ?: "Seleccionar Evento (Opcional)",
@@ -149,8 +155,6 @@ fun PerformanceSheetForm(
                     )
                 }
 
-                // Campos de entrada para las estadísticas
-                // Puedes agruparlos o hacerlos más bonitos
                 StatInputField(label = "Puntos", value = points, onValueChange = { points = it })
                 StatInputField(label = "Asistencias", value = assists, onValueChange = { assists = it })
                 StatInputField(label = "Rebotes Totales", value = rebounds, onValueChange = { rebounds = it })
@@ -203,13 +207,11 @@ fun PerformanceSheetForm(
                 Button(
                     onClick = {
                         try {
-                            // Convertir todos los strings a Int (o Long para IDs si fuera necesario)
-                            // Si falla alguna conversión, se lanza una excepción y isValid se pondrá en false
                             val newSheet = PerformanceSheet(
-                                id = initialPerformanceSheet?.id, // Mantiene el ID si estamos editando
-                                date = selectedDate, // Usa la fecha seleccionada o la actual si no se vincular a evento
-                                playerId = initialPerformanceSheet?.playerId ?: "player1", // Por ahora fijo, luego el actual del usuario
-                                eventId = selectedEvent?.id, // ID del evento seleccionado
+                                id = initialPerformanceSheet?.id ?: 0L,
+                                date = selectedDate,
+                                playerId = initialPerformanceSheet?.playerId ?: MainActivity.currentLoggedInPlayerId ?: -1L,
+                                eventId = selectedEvent?.id,
                                 points = points.toInt(),
                                 assists = assists.toInt(),
                                 rebounds = rebounds.toInt(),
@@ -244,16 +246,13 @@ fun PerformanceSheetForm(
     )
 }
 
-// Contenido de PerformanceSheetForm.kt (parte final)
-// ... (resto del código de PerformanceSheetForm Composable)
-
-// --- StatInputField ---
+// StatInputField y ShotInputField se mantienen igual
 @Composable
 fun StatInputField(label: String, value: String, onValueChange: (String) -> Unit, modifier: Modifier = Modifier) {
     OutlinedTextField(
         value = value,
         onValueChange = { newValue ->
-            if (newValue.all { it.isDigit() } || newValue.isEmpty() || (label == "Plus/Minus" && newValue == "-")) {
+            if (newValue.all { it.isDigit() } || newValue.isEmpty() || (label == "+/-" && newValue == "-")) {
                 onValueChange(newValue)
             }
         },
@@ -272,7 +271,6 @@ fun StatInputField(label: String, value: String, onValueChange: (String) -> Unit
     )
 }
 
-// --- ShotInputField ---
 @Composable
 fun ShotInputField(
     label: String,
@@ -301,4 +299,3 @@ fun ShotInputField(
         )
     )
 }
-

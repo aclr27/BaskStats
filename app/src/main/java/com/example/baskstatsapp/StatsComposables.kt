@@ -38,7 +38,9 @@ import androidx.compose.material3.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun PerformanceItemCard(performanceSheet: PerformanceSheet, playerName: String, modifier: Modifier = Modifier) {
+fun PerformanceItemCard(performanceSheet: PerformanceSheet,
+                        playerName: String,
+                        modifier: Modifier = Modifier) {
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     Card(
         modifier = modifier,
@@ -116,7 +118,7 @@ fun StatRow(label: String, value: String, percentage: String? = null) {
 @Composable
 fun EventItemCard(
     event: Event,
-    playerStats: PerformanceSheet, // ¡Cambio importante aquí!
+    playerStats: PerformanceSheet?,
     playerName: String,
     modifier: Modifier = Modifier
 ) {
@@ -174,18 +176,18 @@ fun EventItemCard(
 
             // Estadísticas clave del jugador
             Text(
-                text = "$playerName - Puntos: ${playerStats.points}",
+                text = "$playerName - Puntos: ${playerStats?.points}",
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = DarkText
             )
             Text(
-                text = "Asistencias: ${playerStats.assists}",
+                text = "Asistencias: ${playerStats?.assists}",
                 fontSize = 13.sp,
                 color = DarkText
             )
             Text(
-                text = "Rebotes: ${playerStats.rebounds}",
+                text = "Rebotes: ${playerStats?.rebounds}",
                 fontSize = 13.sp,
                 color = DarkText
             )

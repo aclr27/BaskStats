@@ -1,11 +1,12 @@
+// app/src/main/java/com/example/baskstatsapp/HomeScreen.kt
 package com.example.baskstatsapp
 
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items // Importar para usar items en LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -24,203 +25,55 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.baskstatsapp.ui.theme.BaskStatsAppTheme
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
 import kotlinx.coroutines.launch
 
+// Importaciones de los modelos y ViewModels
 import com.example.baskstatsapp.model.Event
-import com.example.baskstatsapp.model.EventType
-import com.example.baskstatsapp.model.Player
-import com.example.baskstatsapp.model.PlayerStats // Ten cuidado con este: si solo usas PerformanceSheet, PlayerStats no debería estar aquí.
 import com.example.baskstatsapp.model.PerformanceSheet
 import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
-// Importar StatItem y StatRow desde StatsComposables.kt
-// Android Studio debería añadir esto automáticamente al eliminar las funciones locales
-// import com.example.baskstatsapp.StatItem // Asegúrate de que esto se importa si es necesario
+// Importaciones para observar Flow
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
+// Asegúrate de que estas importaciones son correctas para tus composables de tarjetas
+// Si EventItemCard y PerformanceItemCard están en el mismo paquete, no necesitarán importación explícita
+// Si están en un subpaquete, por ejemplo, 'composables', las importaciones serían así:
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(navController: NavController,
-               eventViewModel: EventViewModel,
-               performanceSheetViewModel: PerformanceSheetViewModel
+fun HomeScreen(
+    navController: NavController,
+    eventViewModel: EventViewModel,
+    performanceSheetViewModel: PerformanceSheetViewModel,
+    onLogout: () -> Unit // Callback para cerrar sesión
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Datos de prueba (Mock Data) con los nuevos modelos
-    val currentPlayer = remember {
-        Player(
-            id = 1L, // Usar un Long para el ID
-            name = "Tu Jugador",
-            email = "jugador@ejemplo.com", // Añadir un email de prueba
-            passwordHash = "unHashDeEjemplo", // Añadir un hash de contraseña de prueba
-            number = 23,
-            position = "Escolta",
-            teamId = null,
-            photoUrl = null,
-            createdAt = System.currentTimeMillis() // Añadir createdAt
-        )
-    }
-    // Datos de ejemplo para eventos y sus estadísticas individuales
-    // ATENCIÓN: Si vas a usar PerformanceSheet en EventDetailScreen, aquí deberías usarlo también
-    // o asegurarte de que PlayerStats es un modelo distinto para datos temporales.
-    val sampleEventsAndStats = remember {
-        listOf(
-            Pair(
-                Event(
-                    id = 1L, // Los IDs deben ser Long para coincidir con Room y navegación
-                    type = EventType.MATCH,
-                    dateTime = LocalDateTime.of(2023, 11, 10, 18, 0),
-                    opponent = "Rival B",
-                    teamScore = 90,
-                    opponentScore = 85,
-                    notes = "Partido de liga"
-                ),
-                PerformanceSheet( // Cambiado a PerformanceSheet
-                    id = 101L,
-                    date = LocalDate.of(2023, 11, 10),
-                    playerId = "player1",
-                    eventId = 1L,
-                    points = 25,
-                    assists = 8,
-                    rebounds = 5, // Usar 'rebounds' si es el campo de PerformanceSheet
-                    offensiveRebounds = 1,
-                    defensiveRebounds = 4,
-                    steals = 2,
-                    blocks = 1,
-                    turnovers = 3,
-                    fouls = 2,
-                    twoPointersMade = 7,
-                    twoPointersAttempted = 12,
-                    threePointersMade = 3,
-                    threePointersAttempted = 6,
-                    freeThrowsMade = 2,
-                    freeThrowsAttempted = 2,
-                    minutesPlayed = 30,
-                    plusMinus = 15
-                )
-            ),
-            Pair(
-                Event(
-                    id = 2L, // Los IDs deben ser Long
-                    type = EventType.TRAINING,
-                    dateTime = LocalDateTime.of(2023, 11, 8, 19, 0),
-                    notes = "Entrenamiento de tiro"
-                ),
-                PerformanceSheet( // Cambiado a PerformanceSheet
-                    id = 102L,
-                    date = LocalDate.of(2023, 11, 8),
-                    playerId = "player1",
-                    eventId = 2L,
-                    points = 15,
-                    assists = 3,
-                    rebounds = 2,
-                    offensiveRebounds = 0,
-                    defensiveRebounds = 2,
-                    steals = 0,
-                    blocks = 0,
-                    turnovers = 1,
-                    fouls = 0,
-                    twoPointersMade = 5,
-                    twoPointersAttempted = 10,
-                    threePointersMade = 1,
-                    threePointersAttempted = 5,
-                    freeThrowsMade = 2,
-                    freeThrowsAttempted = 2,
-                    minutesPlayed = 60,
-                    plusMinus = 0
-                )
-            ),
-            Pair(
-                Event(
-                    id = 3L, // Los IDs deben ser Long
-                    type = EventType.MATCH,
-                    dateTime = LocalDateTime.of(2023, 11, 5, 18, 0),
-                    opponent = "Rival A",
-                    teamScore = 107,
-                    opponentScore = 98,
-                    notes = "Partido amistoso"
-                ),
-                PerformanceSheet( // Cambiado a PerformanceSheet
-                    id = 103L,
-                    date = LocalDate.of(2023, 11, 5),
-                    playerId = "player1",
-                    eventId = 3L,
-                    points = 30,
-                    assists = 7,
-                    rebounds = 10,
-                    offensiveRebounds = 3,
-                    defensiveRebounds = 7,
-                    steals = 3,
-                    blocks = 2,
-                    turnovers = 4,
-                    fouls = 3,
-                    twoPointersMade = 9,
-                    twoPointersAttempted = 15,
-                    threePointersMade = 4,
-                    threePointersAttempted = 8,
-                    freeThrowsMade = 0,
-                    freeThrowsAttempted = 0,
-                    minutesPlayed = 35,
-                    plusMinus = 20
-                )
-            )
-        )
-    }
+    // Obtener el ID del jugador logueado desde MainActivity (temporal para este ejemplo)
+    // Una implementación más robusta usaría un ViewModel compartido o DataStore
+    val currentLoggedInPlayerId = MainActivity.currentLoggedInPlayerId
 
-    // Datos de ejemplo para fichas de rendimiento
-    val samplePerformanceSheets = remember {
-        listOf(
-            PerformanceSheet(
-                id = 104L, // ID de tipo Long
-                date = LocalDate.of(2023, 11, 2),
-                playerId = "player1",
-                eventId = null, // Podría ser nulo si es una ficha general
-                points = 25,
-                assists = 8,
-                rebounds = 5,
-                steals = 2,
-                blocks = 1,
-                turnovers = 3,
-                freeThrowsMade = 2,
-                freeThrowsAttempted = 2,
-                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
-                threePointersMade = 0, threePointersAttempted = 0,
-                minutesPlayed = 0, plusMinus = 0
-            ),
-            PerformanceSheet(
-                id = 105L, // ID de tipo Long
-                date = LocalDate.of(2023, 10, 29),
-                playerId = "player1",
-                eventId = null,
-                points = 21,
-                assists = 7,
-                rebounds = 3,
-                steals = 1,
-                blocks = 0,
-                turnovers = 2,
-                freeThrowsMade = 1,
-                freeThrowsAttempted = 2,
-                fouls = 0, twoPointersMade = 0, twoPointersAttempted = 0,
-                threePointersMade = 0, threePointersAttempted = 0,
-                minutesPlayed = 0, plusMinus = 0
-            )
-        )
-    }
+    // Observar los eventos y fichas de rendimiento del jugador logueado
+    // Nota: Necesitarás implementar estos métodos en tus ViewModels para filtrar por playerId
+    val playerEvents by eventViewModel.getEventsForPlayer(currentLoggedInPlayerId ?: -1L)
+        .collectAsState(initial = emptyList())
+
+    val playerPerformanceSheets by performanceSheetViewModel.getPerformanceSheetsForPlayer(currentLoggedInPlayerId ?: -1L)
+        .collectAsState(initial = emptyList())
+
+    // O si quieres TODOS los eventos/fichas (sin filtrar por jugador logueado):
+    // val allEvents by eventViewModel.allEvents.collectAsState(initial = emptyList())
+    // val allPerformanceSheets by performanceSheetViewModel.allPerformanceSheets.collectAsState(initial = emptyList())
 
 
     ModalNavigationDrawer(
@@ -236,8 +89,6 @@ fun HomeScreen(navController: NavController,
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    // Puedes usar tu logo aquí si quieres, o solo texto como en el ejemplo
-                    // Image(painter = painterResource(R.drawable.logo), contentDescription = "BaskStats Logo", modifier = Modifier.size(80.dp))
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "BaskStats",
@@ -279,13 +130,12 @@ fun HomeScreen(navController: NavController,
                 )
                 NavigationDrawerItem(
                     label = { Text("Eventos") },
-                    selected = navController.currentDestination?.route == "events_screen", // Podrías marcarla como seleccionada si ya estás ahí
+                    selected = navController.currentDestination?.route == "events_screen",
                     onClick = {
                         navController.navigate("events_screen") {
-                            // Limpiar la pila de navegación para no acumular Home Screens
-                            popUpTo("home_screen") { saveState = true } // Guarda el estado de Home
-                            launchSingleTop = true // Evita múltiples copias de EventsScreen
-                            restoreState = true // Restaura el estado si ya existía
+                            popUpTo("home_screen") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
                         }
                         scope.launch { drawerState.close() }
                     },
@@ -354,10 +204,8 @@ fun HomeScreen(navController: NavController,
                     label = { Text("Cerrar Sesión") },
                     selected = false,
                     onClick = {
-                        navController.navigate("login_screen") {
-                            popUpTo("home_screen") { inclusive = true }
-                        }
-                        scope.launch { drawerState.close() }
+                        scope.launch { drawerState.close() } // Cierra el Drawer antes de cerrar sesión
+                        onLogout() // Llama al callback para limpiar la sesión y navegar al login
                     },
                     icon = { Icon(Icons.Filled.Logout, contentDescription = "Cerrar Sesión") },
                     colors = NavigationDrawerItemDefaults.colors(
@@ -456,7 +304,7 @@ fun HomeScreen(navController: NavController,
                             }
                         }
 
-                        // Sección "Eventos Recientes"
+                        // Sección "Eventos Recientes" (usando datos reales del ViewModel)
                         item {
                             Column(
                                 modifier = Modifier
@@ -471,15 +319,35 @@ fun HomeScreen(navController: NavController,
                                     ),
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
-                                // Renderiza las tarjetas de eventos usando los nuevos datos
-                                sampleEventsAndStats.forEach { (event, performanceSheet) ->
-                                    EventItemCard(event = event, playerStats = performanceSheet, playerName = currentPlayer.name)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                if (playerEvents.isEmpty()) {
+                                    Text("No hay eventos registrados para este jugador.", color = DarkText.copy(alpha = 0.6f))
+                                } else {
+                                    playerEvents.forEach { event ->
+                                        // Para el playerStats en EventItemCard, si realmente necesitas la PerformanceSheet
+                                        // asociada a ese evento Y ese jugador, tendrás que obtenerla.
+                                        // Por ahora, para evitar errores, si no hay PerformanceSheet asociada directamente,
+                                        // podrías pasar 'null' o una PerformanceSheet vacía por defecto.
+                                        // La solución ideal sería que EventItemCard solo requiera el Event y un PlayerId,
+                                        // y que la propia tarjeta obtenga los datos de rendimiento si los necesita,
+                                        // o que tengas un objeto de dominio combinado (e.g., EventWithPerformance)
+                                        // en tu ViewModel/DAO.
+
+                                        // Buscamos la PerformanceSheet para el evento y el jugador actual
+                                        val associatedPerformanceSheet = playerPerformanceSheets.find {
+                                            it.eventId == event.id && it.playerId == currentLoggedInPlayerId
+                                        }
+                                        EventItemCard(
+                                            event = event,
+                                            playerStats = associatedPerformanceSheet,
+                                            playerName = "Tu Jugador" // Aquí podrías cargar el nombre real del jugador desde PlayerViewModel
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
                                 }
                             }
                         }
 
-                        // Sección "Fichas de Rendimiento"
+                        // Sección "Fichas de Rendimiento" (usando datos reales del ViewModel)
                         item {
                             Column(
                                 modifier = Modifier
@@ -494,9 +362,16 @@ fun HomeScreen(navController: NavController,
                                     ),
                                     modifier = Modifier.padding(bottom = 16.dp)
                                 )
-                                samplePerformanceSheets.forEach { sheet ->
-                                    PerformanceItemCard(performanceSheet = sheet, playerName = currentPlayer.name)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                if (playerPerformanceSheets.isEmpty()) {
+                                    Text("No hay fichas de rendimiento para este jugador.", color = DarkText.copy(alpha = 0.6f))
+                                } else {
+                                    playerPerformanceSheets.forEach { sheet ->
+                                        PerformanceItemCard(
+                                            performanceSheet = sheet,
+                                            playerName = "Tu Jugador"
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                    }
                                 }
                             }
                         }

@@ -1,16 +1,15 @@
+// app/src/main/java/com/example/baskstatsapp/MainActivity.kt
 package com.example.baskstatsapp
 
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.fillMaxSize // <-- ¡Asegúrate de esta importación!
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
@@ -49,7 +48,7 @@ class MainActivity : ComponentActivity() {
     private val performanceSheetDao: PerformanceSheetDao by lazy { database.performanceSheetDao() }
     private val playerDao: PlayerDao by lazy { database.playerDao() }
 
-    @RequiresApi(Build.VERSION_CODES.O) // Mantén esta anotación aquí
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -59,7 +58,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BaskStatsAppTheme {
                 Surface(
-                    modifier = Modifier.fillMaxSize(), // <-- 'fillMaxSize' debería funcionar con la importación
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
@@ -99,12 +98,18 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        // --- ¡QUITADA LA ANOTACIÓN @RequiresApi DE ESTOS BLOQUES 'composable'! ---
                         composable("home_screen") {
                             HomeScreen(
                                 navController = navController,
                                 eventViewModel = eventViewModel,
                                 performanceSheetViewModel = performanceSheetViewModel,
+                                onLogout = {
+                                    sharedPrefs.edit().remove("logged_in_player_id").apply()
+                                    currentLoggedInPlayerId = null
+                                    navController.navigate("login_screen") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
                             )
                         }
                         composable("events_screen") {
@@ -115,7 +120,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(
                             route = "event_detail_screen/{eventId}",
-                            arguments = listOf(navArgument("eventId") { type = NavType.LongType })
+                            arguments = listOf(navArgument("eventId") { type = NavType.LongType; defaultValue = -1L })
                         ) { backStackEntry ->
                             val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1L
                             EventDetailScreen(
@@ -123,6 +128,17 @@ class MainActivity : ComponentActivity() {
                                 eventId = eventId,
                                 eventViewModel = eventViewModel,
                                 performanceSheetViewModel = performanceSheetViewModel
+                            )
+                        }
+                        composable(
+                            route = "edit_event_screen/{eventId}",
+                            arguments = listOf(navArgument("eventId") { type = NavType.LongType; defaultValue = -1L })
+                        ) { backStackEntry ->
+                            val eventId = backStackEntry.arguments?.getLong("eventId") ?: -1L
+                            EditEventScreen(
+                                navController = navController,
+                                eventId = eventId,
+                                eventViewModel = eventViewModel
                             )
                         }
                         composable("performance_sheets_screen") {
@@ -133,13 +149,14 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(
                             route = "performance_sheet_detail_screen/{sheetId}",
-                            arguments = listOf(navArgument("sheetId") { type = NavType.LongType })
+                            arguments = listOf(navArgument("sheetId") { type = NavType.LongType; defaultValue = -1L })
                         ) { backStackEntry ->
-                            val sheetId = backStackEntry.arguments?.getLong("sheetId")
+                            val sheetId = backStackEntry.arguments?.getLong("sheetId") ?: -1L
                             PerformanceSheetDetailScreen(
                                 navController = navController,
                                 sheetId = sheetId,
-                                performanceSheetViewModel = performanceSheetViewModel
+                                performanceSheetViewModel = performanceSheetViewModel,
+                                eventViewModel = eventViewModel,
                             )
                         }
 
@@ -151,27 +168,46 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(
-                            route = "add_performance_sheet_screen/{eventId}",
-                            arguments = listOf(navArgument("eventId") { type = NavType.LongType })
+                            route = "add_performance_sheet_screen?eventId={eventId}",
+                            arguments = listOf(navArgument("eventId") {
+                                type = NavType.LongType
+                                defaultValue = -1L
+                                // ELIMINADO: nullable = true // Esto causó el error para LongType
+                            })
                         ) { backStackEntry ->
-                            val eventId = backStackEntry.arguments?.getLong("eventId")
+                            // El `takeIf` maneja la opcionalidad correctamente aquí.
+                            val eventId = backStackEntry.arguments?.getLong("eventId")?.takeIf { it != -1L }
                             AddPerformanceSheetScreen(
                                 navController = navController,
                                 performanceSheetViewModel = performanceSheetViewModel,
                                 eventViewModel = eventViewModel,
-                                eventId = eventId
+                                playerViewModel = playerViewModel,
+                                associatedEventId = eventId
                             )
                         }
                         composable(
                             route = "edit_performance_sheet_screen/{sheetId}",
-                            arguments = listOf(navArgument("sheetId") { type = NavType.LongType })
+                            arguments = listOf(navArgument("sheetId") { type = NavType.LongType; defaultValue = -1L })
                         ) { backStackEntry ->
-                            val sheetId = backStackEntry.arguments?.getLong("sheetId")
+                            val sheetId = backStackEntry.arguments?.getLong("sheetId") ?: -1L
                             EditPerformanceSheetScreen(
                                 navController = navController,
                                 sheetId = sheetId,
                                 performanceSheetViewModel = performanceSheetViewModel,
-                                eventViewModel = eventViewModel
+                                eventViewModel = eventViewModel,
+                                playerViewModel = playerViewModel
+                            )
+                        }
+                        composable(
+                            route = "player_stats_screen/{playerId}",
+                            arguments = listOf(navArgument("playerId") { type = NavType.LongType; defaultValue = -1L })
+                        ) { backStackEntry ->
+                            val playerId = backStackEntry.arguments?.getLong("playerId") ?: -1L
+                            PlayerStatsScreen(
+                                navController = navController,
+                                playerId = playerId,
+                                performanceSheetViewModel = performanceSheetViewModel,
+                                playerViewModel = playerViewModel
                             )
                         }
                     }

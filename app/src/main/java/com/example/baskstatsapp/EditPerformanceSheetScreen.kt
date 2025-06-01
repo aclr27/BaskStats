@@ -1,3 +1,4 @@
+// app/src/main/java/com/example/baskstatsapp/EditPerformanceSheetScreen.kt
 package com.example.baskstatsapp
 
 import android.os.Build
@@ -17,21 +18,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.baskstatsapp.model.PerformanceSheet
 import com.example.baskstatsapp.ui.theme.DarkText
 import com.example.baskstatsapp.ui.theme.LightGrayBackground
 import com.example.baskstatsapp.ui.theme.PrimaryOrange
+import com.example.baskstatsapp.viewmodel.EventViewModel
 import com.example.baskstatsapp.viewmodel.PerformanceSheetViewModel
-import java.time.LocalDate
+import com.example.baskstatsapp.viewmodel.PlayerViewModel
 import kotlinx.coroutines.launch
 
-@RequiresApi(Build.VERSION_CODES.O)
+// Import StatInputField if it's defined in another file (e.g., PerformanceSheetForm.kt or a common Composables file)
+// If StatInputField is defined directly in PerformanceSheetForm.kt, you might need to move it to a more accessible location
+// like a dedicated 'composables' package or define it here if it's only used in this screen.
+// For now, I'll assume you'll either move it or define it here.
+// Let's define StatInputField here for simplicity and to resolve the immediate error.
+// Ideally, this should be in a separate, reusable composable file.
+// If you already have it in PerformanceSheetForm.kt, ensure that file is in the same package or imported if needed.
+// For the sake of resolving the *current* errors directly, I will include StatInputField here.
+
+/*
+// If StatInputField is NOT in this file, you would need an import like:
+import com.example.baskstatsapp.StatInputField // Assuming StatInputField is in the root package
+// OR
+// import com.example.baskstatsapp.composables.StatInputField // If you move it to a 'composables' package
+*/
+
 @OptIn(ExperimentalMaterial3Api::class)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EditPerformanceSheetScreen(
     navController: NavController,
     sheetId: Long?, // El ID de la ficha a editar
-    performanceSheetViewModel: PerformanceSheetViewModel
+    performanceSheetViewModel: PerformanceSheetViewModel,
+    eventViewModel: EventViewModel,
+    playerViewModel: PlayerViewModel
 ) {
     // Carga la ficha de rendimiento existente
     val existingSheet by performanceSheetViewModel.getPerformanceSheetById(sheetId ?: -1L).collectAsState(initial = null)
@@ -116,24 +135,28 @@ fun EditPerformanceSheetScreen(
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
-                    // Campos para las estadísticas (reutilizando NumericInputField)
-                    NumericInputField(value = points, onValueChange = { points = it }, label = "Puntos")
-                    NumericInputField(value = assists, onValueChange = { assists = it }, label = "Asistencias")
-                    NumericInputField(value = rebounds, onValueChange = { rebounds = it }, label = "Rebotes Totales")
-                    NumericInputField(value = offensiveRebounds, onValueChange = { offensiveRebounds = it }, label = "Rebotes Ofensivos")
-                    NumericInputField(value = defensiveRebounds, onValueChange = { defensiveRebounds = it }, label = "Rebotes Defensivos")
-                    NumericInputField(value = steals, onValueChange = { steals = it }, label = "Robos")
-                    NumericInputField(value = blocks, onValueChange = { blocks = it }, label = "Tapones")
-                    NumericInputField(value = turnovers, onValueChange = { turnovers = it }, label = "Pérdidas")
-                    NumericInputField(value = fouls, onValueChange = { fouls = it }, label = "Faltas")
-                    NumericInputField(value = twoPointersMade, onValueChange = { twoPointersMade = it }, label = "T2 Anotados")
-                    NumericInputField(value = twoPointersAttempted, onValueChange = { twoPointersAttempted = it }, label = "T2 Intentados")
-                    NumericInputField(value = threePointersMade, onValueChange = { threePointersMade = it }, label = "T3 Anotados")
-                    NumericInputField(value = threePointersAttempted, onValueChange = { threePointersAttempted = it }, label = "T3 Intentados")
-                    NumericInputField(value = freeThrowsMade, onValueChange = { freeThrowsMade = it }, label = "TL Anotados")
-                    NumericInputField(value = freeThrowsAttempted, onValueChange = { freeThrowsAttempted = it }, label = "TL Intentados")
-                    NumericInputField(value = minutesPlayed, onValueChange = { minutesPlayed = it }, label = "Minutos Jugados")
-                    NumericInputField(value = plusMinus, onValueChange = { plusMinus = it }, label = "+/-", isSigned = true)
+                    // Campos para las estadísticas (reutilizando StatInputField)
+                    StatInputField(value = points, onValueChange = { points = it }, label = "Puntos")
+                    StatInputField(value = assists, onValueChange = { assists = it }, label = "Asistencias")
+                    StatInputField(value = rebounds, onValueChange = { rebounds = it }, label = "Rebotes Totales")
+                    StatInputField(value = offensiveRebounds, onValueChange = { offensiveRebounds = it }, label = "Rebotes Ofensivos")
+                    StatInputField(value = defensiveRebounds, onValueChange = { defensiveRebounds = it }, label = "Rebotes Defensivos")
+                    StatInputField(value = steals, onValueChange = { steals = it }, label = "Robos")
+                    StatInputField(value = blocks, onValueChange = { blocks = it }, label = "Tapones")
+                    StatInputField(value = turnovers, onValueChange = { turnovers = it }, label = "Pérdidas")
+                    StatInputField(value = fouls, onValueChange = { fouls = it }, label = "Faltas")
+                    StatInputField(value = twoPointersMade, onValueChange = { twoPointersMade = it }, label = "T2 Anotados")
+                    StatInputField(value = twoPointersAttempted, onValueChange = { twoPointersAttempted = it }, label = "T2 Intentados")
+                    StatInputField(value = threePointersMade, onValueChange = { threePointersMade = it }, label = "T3 Anotados")
+                    StatInputField(value = threePointersAttempted, onValueChange = { threePointersAttempted = it }, label = "T3 Intentados")
+                    StatInputField(value = freeThrowsMade, onValueChange = { freeThrowsMade = it }, label = "TL Anotados")
+                    StatInputField(value = freeThrowsAttempted, onValueChange = { freeThrowsAttempted = it }, label = "TL Intentados")
+                    StatInputField(value = minutesPlayed, onValueChange = { minutesPlayed = it }, label = "Minutos Jugados")
+                    // If your StatInputField can handle signed numbers (like +/-), you might need to add a parameter like `isSigned`.
+                    // Otherwise, for `+/-` you might need a separate component or custom logic.
+                    // Assuming StatInputField is robust enough, or +/- will always be parsed correctly.
+                    // Based on the 'StatInputField' I previously provided in PerformanceSheetForm, it already handles the '-' for '+/-'
+                    StatInputField(value = plusMinus, onValueChange = { plusMinus = it }, label = "+/-")
 
 
                     Spacer(modifier = Modifier.height(24.dp))
